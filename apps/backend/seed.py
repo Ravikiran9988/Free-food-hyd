@@ -11,7 +11,7 @@ def seed_admin(email: str, raw_password: str):
 
     db = SessionLocal()
     try:
-        existing = db.query(models.User).filter(User.email == email).first()
+        existing = db.query(models.User).filter(models.User.email == email).first()
         if existing:
             existing.role = "admin"
             existing.hashed_password = get_password_hash(raw_password)
