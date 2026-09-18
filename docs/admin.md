@@ -1,27 +1,55 @@
-# Admin Guide
+# Admin Dashboard
 
-The Admin Dashboard provides moderation capabilities to maintain data quality.
+## Access
 
-## Accessing the Dashboard
-1. Navigate to `/signin` in the React frontend.
-2. Enter the admin credentials. These can be configured in your `.env` file (`ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH`) or natively seeded into the Postgres database as an `admin` role user (see `docs/setup.md`).
-3. Upon successful login, the public navigation bar will update to include an **Admin Dashboard** option pointing to `/admin`.
+1. Navigate to `/signin`.
+2. Sign in with an account whose database role is `admin`.
+3. The authenticated account menu exposes **Admin Dashboard**.
+4. The `/admin` route is protected by frontend routing and backend RBAC.
 
-## Features
+There is no separate Admin Login screen.
 
-### System Stats
-The top level displays global system metrics:
-- Total Spots (All active records)
-- Active Spots
-- Pending Submissions (Requires attention)
+## Dashboard
 
-### Moderation Workflow
-When users use the "Add a Place" feature on the public site, the records are sent to the `community_submissions` table.
+The dashboard provides:
 
-1. **Review**: The dashboard displays pending submissions, showing the requested name, area, and coordinates.
-2. **Action**: 
-   - Clicking **Approve** executes `POST /admin/submissions/{id}/approve`. The backend automatically creates a new `Spot` record with `source_type="community"` and marks the submission as approved.
-   - Clicking **Reject** discards the submission, preventing spam from reaching the live map.
+- Overview metrics
+- Pending community place submissions
+- Open reports
+- Suggested updates
+- Recent community availability activity
 
-### Data Quality
-Admins should monitor the `sync_runs` table (accessible via database queries) to ensure the automated upstream scraper is running successfully every night. If `skipped_records` or `expired_count` suddenly spikes, the upstream public API may have changed its format.
+## Moderation
+
+### Place submissions
+
+Admins can review community-submitted places and:
+
+- Approve & publish
+- Reject
+
+Meal details remain explicitly identified as community-provided when supplied.
+
+### Reports
+
+Admins can:
+
+- Resolve
+- Dismiss
+
+### Suggested updates
+
+Admins can:
+
+- Apply an update
+- Reject
+
+## Data provenance
+
+Imported source data, community-provided information, and actual admin-reviewed information must remain distinguishable.
+
+The dashboard must not label every imported record as admin verified.
+
+## Security
+
+Admin API authorization is enforced by the backend using the authenticated user's JWT role. Hiding an admin link in the frontend is not considered a security control.

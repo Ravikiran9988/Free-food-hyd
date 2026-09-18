@@ -1,3 +1,4 @@
+import os
 import urllib.request
 import json
 import sys
@@ -48,7 +49,11 @@ def test_admin_flow():
     print(f"[PASS] Submitted community spot, ID: {sub_id}")
 
     # 3. Login as Admin
-    admin_token = get_auth_token("medicharlaravikiran88@gmail.com", "Kiran@2004")
+    admin_email = os.getenv("E2E_ADMIN_USERNAME") or os.getenv("ADMIN_USERNAME")
+    admin_password = os.getenv("E2E_ADMIN_PASSWORD") or os.getenv("ADMIN_PASSWORD")
+    if not admin_email or not admin_password:
+        raise RuntimeError("Set E2E_ADMIN_USERNAME/E2E_ADMIN_PASSWORD (or ADMIN_USERNAME/ADMIN_PASSWORD) before running the admin E2E test.")
+    admin_token = get_auth_token(admin_email, admin_password)
     assert admin_token is not None, "Failed to get admin token"
     print(f"[PASS] Admin logged in successfully")
 
