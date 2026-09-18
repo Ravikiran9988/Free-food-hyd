@@ -1,8 +1,8 @@
 import os
 
-from app.auth import get_password_hash
-from app.database import SessionLocal
-from app.models import User
+from auth import get_password_hash
+from database import SessionLocal
+import models
 
 
 def seed_admin(email: str, raw_password: str):
@@ -11,14 +11,14 @@ def seed_admin(email: str, raw_password: str):
 
     db = SessionLocal()
     try:
-        existing = db.query(User).filter(User.email == email).first()
+        existing = db.query(models.User).filter(User.email == email).first()
         if existing:
             existing.role = "admin"
             existing.hashed_password = get_password_hash(raw_password)
             db.commit()
             print("Admin user updated")
         else:
-            admin_user = User(
+            admin_user = models.User(
                 email=email,
                 hashed_password=get_password_hash(raw_password),
                 role="admin",
