@@ -77,6 +77,7 @@ Set `ADMIN_USERNAME` and `ADMIN_PASSWORD`, then run:
 
 ```bash
 cd apps/backend
+export PYTHONPATH="$(pwd)/app"
 python seed.py
 ```
 
