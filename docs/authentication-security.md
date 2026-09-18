@@ -1,28 +1,68 @@
 # Authentication & Security
 
-The Free Food Hyderabad platform separates security concerns into two tiers: Public (Rate Limited) and Admin (Authenticated).
+## Authentication flow
 
-## Public Endpoints
-Most endpoints (`/spots`, `/events`) are completely open. They require no authentication.
+Free Food Hyderabad uses one authentication flow for both normal users and administrators:
 
-## Admin Authentication
-Accessing the `/admin/*` routes requires a valid JSON Web Token (JWT).
-1. An admin submits credentials to `/admin/token`.
-2. The backend verifies the credentials against the securely hashed `ADMIN_PASSWORD_HASH` stored in the `.env` environment variables.
-3. Upon success, a JWT is generated using the `ADMIN_SECRET_KEY`.
-4. The React frontend stores this token in `localStorage` (`admin_token`) and attaches it as a `Bearer` token in the `Authorization` header for subsequent requests.
+1. The user submits credentials to `POST /auth/login`.
+2. The backend verifies the user's bcrypt password hash from the `users` table.
+3. The backend issues a JWT containing the user's identity and role.
+4. The frontend stores the authenticated session token as `ffh_token`.
+5. Authenticated API requests send `Authorization: Bearer <token>`.
+6. `GET /auth/me` resolves the current user and role.
 
-## Security Considerations & Abuse Protection
+There is no separate frontend-only admin login and no separate `admin_token`.
 
-### CORS
-Configured in FastAPI via `CORSMiddleware`. The `CORS_ORIGINS` environment variable strictly defines which domains are permitted to interact with the API, preventing malicious cross-origin requests.
+## Roles
 
-### Rate Limiting & Cooldowns
-Because community feedback (e.g., "Report") does not require login, it is susceptible to spam.
-The `anti_abuse.py` module implements a sliding window tracker. If an IP or browser fingerprint submits feedback for a specific spot, they are placed on a cooldown for that spot. Successive immediate attempts return `429 Too Many Requests`.
+- `user`: normal account features.
+- `admin`: normal account features plus protected moderation/admin APIs.
 
-### Environment Secrets
-**Never** commit the `.env` file. Keys like `ADMIN_SECRET_KEY` must remain strictly on the server. If the secret key leaks, malicious actors could forge their own JWTs and approve arbitrary, malicious spots in the database.
+Role checks in the frontend only control the UI. Every admin endpoint also enforces the role on the backend.
 
-### Input Validation
-All API requests are strictly validated using Pydantic schemas. Unexpected fields are stripped, and invalid data types are rejected with a `422 Unprocessable Entity` error before they ever reach the database or business logic.
+## Admin bootstrap
+
+Create or promote an administrator through the backend seed command.
+
+Set these environment variables locally:
+
+```env
+ADMIN_USERNAME=admin@example.com
+ADMIN_PASSWORD=use-a-strong-password
+```
+
+Then run the seed command from the backend environment:
+
+```bash
+python apps/backend/seed.py
+```
+
+The password is hashed before it is stored. Never commit a real password or password hash generated from a real credential.
+
+## Protected admin routes
+
+The following require an authenticated administrator:
+
+- `/admin/submissions`
+- `/admin/reports`
+- `/admin/suggested-updates`
+- `/admin/community-updates`
+- `/stats`
+
+A normal user receives `403` for admin-only operations. An unauthenticated request receives `401`.
+
+## Frontend behavior
+
+Logged-out users see **Sign In**.
+
+After login, users see an account menu. Administrators also see **Admin Dashboard** inside that menu.
+
+The public navigation does not expose an Admin link.
+
+## Security notes
+
+- Keep `ADMIN_SECRET_KEY` in environment configuration.
+- Do not commit production secrets.
+- Do not store plaintext passwords.
+- Do not allow users to change their own role.
+- Do not rely on frontend route hiding for authorization.
