@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   Check,
@@ -295,7 +295,7 @@ export function AdminDashboard() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value?: number }) {
+function Metric({ icon, label, value }: { icon: ReactNode; label: string; value?: number }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
       <div className="flex items-center justify-between">
@@ -330,7 +330,7 @@ function ModerationList<T extends { id: string }>({
   title: string;
   empty: string;
   items: T[];
-  render: (item: T) => React.ReactNode;
+  render: (item: T) => ReactNode;
 }) {
   return (
     <section className="space-y-4">
@@ -383,7 +383,7 @@ function Actions({
   );
 }
 
-function Badge({ children, tone = 'green' }: { children: React.ReactNode; tone?: 'green' | 'amber' | 'blue' }) {
+function Badge({ children, tone = 'green' }: { children: ReactNode; tone?: 'green' | 'amber' | 'blue' }) {
   const classes = {
     green: 'bg-brand-50 text-brand-700',
     amber: 'bg-amber-50 text-amber-800',
