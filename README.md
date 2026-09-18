@@ -65,6 +65,61 @@ free-food-hyderabad/
    ```
 4. Access the frontend at `http://localhost:8080` and the API at `http://localhost:8000`.
 
+## Configuration
+
+Copy `.env.example` to `.env` before running the stack. The template documents the database, JWT security, admin bootstrap, scheduler, and source configuration.
+
+### Important environment variables
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection used by the backend |
+| `ADMIN_SECRET_KEY` | JWT signing/verification secret; keep stable across backend instances |
+| `CORS_ORIGINS` | Allowed browser origins; restrict in production |
+| `ADMIN_USERNAME` | Admin bootstrap email/username used by `seed.py` |
+| `ADMIN_PASSWORD` | Admin bootstrap password used by `seed.py` |
+| `SYNC_SCHEDULE_HOUR` | Scheduled sync hour in UTC |
+| `VITE_API_URL` | Optional frontend API URL, configured in the frontend Vite environment |
+
+Never commit the real `.env`, passwords, JWTs, password hashes, or production secrets.
+
+## Admin Setup
+
+There is one authentication system for normal users and administrators. Admin access is determined by the database user's `admin` role; there is no separate admin login.
+
+### Docker
+
+After copying and configuring `.env`:
+
+```bash
+docker compose up -d --build
+docker compose exec backend python seed.py
+```
+
+The seed command reads `ADMIN_USERNAME` and `ADMIN_PASSWORD` from the backend container environment. It creates the account if it does not exist, or promotes/updates the existing account to `admin`.
+
+### Local development
+
+With PostgreSQL/PostGIS running locally:
+
+```bash
+cd apps/backend
+export PYTHONPATH="$(pwd)/app"
+python seed.py
+```
+
+Windows PowerShell:
+
+```powershell
+cd apps/backend
+$env:PYTHONPATH="$pwd/app"
+python seed.py
+```
+
+Changing `ADMIN_PASSWORD` in `.env` does not automatically change an existing account; run the seed command again to apply it.
+
+Keep `ADMIN_SECRET_KEY` unchanged across restarts. Changing it invalidates previously issued JWTs.
+
 ## Documentation Navigation
 
 Detailed documentation can be found in the `docs/` directory:
