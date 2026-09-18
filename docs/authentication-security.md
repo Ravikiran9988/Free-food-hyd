@@ -34,7 +34,9 @@ ADMIN_PASSWORD=use-a-strong-password
 Then run the seed command from the backend environment:
 
 ```bash
-python apps/backend/seed.py
+cd apps/backend
+export PYTHONPATH="$(pwd)/app"
+python seed.py
 ```
 
 The password is hashed before it is stored. Never commit a real password or password hash generated from a real credential.
