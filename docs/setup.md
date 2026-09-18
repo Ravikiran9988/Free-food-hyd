@@ -57,3 +57,22 @@ npm run dev
 ```
 
 The frontend will be available at `http://localhost:5173` (Vite default).
+
+## 6. Admin Account Setup
+To access the Admin Dashboard at `/admin`, you need an admin account. You can configure this via Environment Variables or by seeding the database directly.
+
+**Option A: Environment Variables (Quickest)**
+Edit your `.env` file to set the default credentials:
+```env
+ADMIN_USERNAME=admin@example.com
+# Must be a bcrypt hash of your password
+ADMIN_PASSWORD_HASH=$2b$12$YourSecureBcryptHash
+```
+
+**Option B: Database Seeding (Production Recommended)**
+To create a real user record with admin privileges, run the seed script from the backend directory:
+```bash
+cd apps/backend/app
+# Create a seed.py script as documented, or insert via SQL
+```
+(See `docs/admin.md` for full details on administration and seeding).

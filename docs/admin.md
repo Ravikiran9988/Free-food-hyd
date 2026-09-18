@@ -3,9 +3,9 @@
 The Admin Dashboard provides moderation capabilities to maintain data quality.
 
 ## Accessing the Dashboard
-1. Navigate to `/admin` in the React frontend.
-2. Enter the admin credentials (configured via environment variables during deployment).
-3. Upon successful login, the dashboard unlocks.
+1. Navigate to `/signin` in the React frontend.
+2. Enter the admin credentials. These can be configured in your `.env` file (`ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH`) or natively seeded into the Postgres database as an `admin` role user (see `docs/setup.md`).
+3. Upon successful login, the public navigation bar will update to include an **Admin Dashboard** option pointing to `/admin`.
 
 ## Features
 

@@ -7,11 +7,12 @@ Free Food Hyderabad is a community-powered platform for discovering free meals, 
 **Important:** The initial dataset comes from existing publicly accessible Annadhanam sources through the project's data pipeline. While the community can verify and update information, not all information is guaranteed to be community-verified or real-time. Please verify information before traveling.
 
 ## Key Features
-- 🗺️ **Geographic Search**: Find free food locations near you using PostGIS spatial queries.
+- 🗺️ **Geographic Search & Map Interfaces**: Find free food locations near you using PostGIS spatial queries, and submit new places using an interactive map pin drop.
 - 📅 **Time-Aware Availability**: View what's "Serving Now", "Starting Soon", or happening "Later Today".
-- 🤝 **Community Contributions**: Add new spots, suggest updates, and report incorrect information.
-- 🛡️ **Graceful Data Sync**: Safe, non-destructive background synchronization from public sources.
-- 📱 **Progressive Web App (PWA)**: Installable on mobile devices with responsive design.
+- 🤝 **Community Contributions & Live Validation**: Add new spots, suggest updates, and report incorrect information. The platform uses plain-english heuristics (e.g. *"2 people recently said it's happening"*) to communicate consensus.
+- 🚦 **Data Provenance Filters**: Easily filter out "Unverified Places" from canonical synced data, while maintaining proper categorization.
+- 🛡️ **Graceful Data Sync & Admin Control**: Safe, non-destructive background synchronization from public sources, backed by a JWT-secured Admin Dashboard for moderating community submissions.
+- 📱 **Mobile-First PWA Layout**: Fully responsive interface tailored for mobile screens.
 
 ## Architecture Overview
 The platform uses a modern, modular architecture separated into distinct apps and pipelines.
