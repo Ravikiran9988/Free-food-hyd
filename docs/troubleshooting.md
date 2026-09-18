@@ -1,46 +1,55 @@
 # Troubleshooting
 
-Common issues and solutions based on the actual repository configuration.
+## 1. Database connection failure
 
-## 1. Database Connection Failure
-**Error**: `asyncpg.exceptions.InvalidCatalogNameError: database "freefoodhyd" does not exist`
-**Cause**: The database was not created in PostgreSQL.
-**Fix**: 
-If running locally (non-Docker), connect to `psql` and run: `CREATE DATABASE freefoodhyd;`.
-If using Docker, ensure the `POSTGRES_DB` environment variable is set in `.env` before running `docker-compose up`.
+**Error:** database `freefoodhyd` does not exist.
 
-## 2. PostGIS Function Missing
-**Error**: `function st_distancesphere(geometry, geometry) does not exist`
-**Cause**: The PostGIS extension is not enabled on your database.
-**Fix**:
-Connect to your database and run: `CREATE EXTENSION postgis;`. (The Docker setup handles this automatically via the `postgis/postgis` image).
+**Fix:** create the database and enable PostGIS, or verify the Docker database environment variables.
 
-## 3. Frontend Cannot Reach Backend
-**Error**: Frontend displays "Network Error" or maps fail to load spots.
-**Cause**: CORS issues or incorrect API URL.
-**Fix**:
-- Check `apps/frontend/src/services/api.ts`. Ensure `API_URL` is pointing to `http://localhost:8000` (or your production backend URL).
-- Check the `.env` file for the backend. `CORS_ORIGINS` must include the URL the frontend is running on (e.g., `http://localhost:5173` for Vite, or `http://localhost:8080` for Docker).
+## 2. PostGIS function missing
 
-## 4. Scraper / Sync Failure
-**Error**: `ModuleNotFoundError: No module named 'app'` when running `sync.py`.
-**Cause**: The Python path does not include the backend directory.
-**Fix**:
-Run the sync script with the correct `PYTHONPATH`:
-```bash
-export PYTHONPATH="$(pwd)/../apps/backend/app"
-python src/sync.py
+**Error:** `st_distancesphere` or another PostGIS function is unavailable.
+
+**Fix:**
+
+```sql
+CREATE EXTENSION postgis;
 ```
 
-## 5. Missing Data on Map
-**Error**: The map is empty, and `/spots` returns `{"items": [], "total": 0}`.
-**Cause**: The data pipeline sync hasn't run.
-**Fix**: 
-If using Docker, check the scheduler logs (`docker-compose logs scheduler`). It should run automatically on startup.
-If running locally, execute `python data-pipeline/src/sync.py` to populate the database.
+## 3. Frontend cannot reach backend
 
-## 6. Admin Login Fails
-**Error**: `401 Unauthorized` when attempting to login to the admin dashboard.
-**Cause**: Incorrect password or misconfigured secret key.
-**Fix**:
-Ensure `ADMIN_PASSWORD_HASH` and `ADMIN_SECRET_KEY` are properly set in the `.env` file. If you lost your password, you must generate a new bcrypt hash and update `.env`.
+Check `VITE_API_URL` and backend `CORS_ORIGINS`. The local defaults are normally frontend `http://localhost:5173` and backend `http://127.0.0.1:8000`.
+
+## 4. Scraper / sync import failure
+
+If Python cannot find the backend `app` package, set `PYTHONPATH` as described in `docs/setup.md` and run the sync from the `data-pipeline` directory.
+
+## 5. Map has no data
+
+Run the data sync and check that the PostgreSQL database contains spots. If using Docker, inspect the backend/scheduler logs.
+
+## 6. Sign in returns 401
+
+The application uses the database-backed `/auth/login` endpoint for both users and admins.
+
+Check:
+
+1. The email exactly matches the `users.email` value.
+2. The password was created through registration or the admin seed command.
+3. The admin user has `role = 'admin'` if accessing admin features.
+4. `ADMIN_SECRET_KEY` is the same across backend restarts.
+5. The browser is sending the returned JWT as `Authorization: Bearer <token>` on `/auth/me`.
+
+For an admin account, run the seed command again after setting `ADMIN_USERNAME` and `ADMIN_PASSWORD` in the local environment.
+
+## 7. Admin Dashboard shows unauthorized
+
+The dashboard no longer has a separate Admin Login. It relies on the same authenticated session as the rest of the application.
+
+Sign out, sign in again at `/signin`, and verify the account has the `admin` role.
+
+A normal user should receive `403 Forbidden` for admin-only APIs.
+
+## 8. Frontend shows a stale authentication error
+
+Clear the application's `ffh_token` from local storage by signing out, then sign in again. The app should not repeatedly call `/auth/me` without a token.
