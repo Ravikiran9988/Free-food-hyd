@@ -344,22 +344,8 @@ export async function fetchStats(): Promise<StatsResponse> {
 // --- Admin APIs ---
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('admin_token');
+  const token = localStorage.getItem('ffh_token');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
-}
-
-export async function loginAdmin(username: string, password: string) {
-  const formData = new URLSearchParams();
-  formData.append('username', username);
-  formData.append('password', password);
-  
-  const res = await fetch(`${API_BASE_URL}/admin/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: formData.toString(),
-  });
-  if (!res.ok) throw new Error('Invalid credentials');
-  return res.json();
 }
 
 export async function fetchAdminSubmissions(status = 'pending'): Promise<CommunitySubmissionItem[]> {
@@ -413,6 +399,14 @@ export async function moderateSuggestedUpdate(id: string, action: 'approve' | 'r
     body: JSON.stringify({ action }),
   });
   if (!res.ok) throw new Error(`Failed to moderate suggested update: ${res.statusText}`);
+  return res.json();
+}
+
+export async function fetchAdminCommunityUpdates(limit = 50): Promise<any[]> {
+  const res = await fetch(`${API_BASE_URL}/admin/community-updates?limit=${limit}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch community updates: ${res.statusText}`);
   return res.json();
 }
 

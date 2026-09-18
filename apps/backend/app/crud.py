@@ -600,3 +600,6 @@ def moderate_suggested_update(db: Session, update_id: str, action: str) -> Optio
     db.commit()
     db.refresh(up)
     return up
+
+def get_admin_community_updates(db: Session, limit: int = 50) -> List[models.Feedback]:
+    return db.query(models.Feedback).order_by(models.Feedback.created_at.desc()).limit(limit).all()

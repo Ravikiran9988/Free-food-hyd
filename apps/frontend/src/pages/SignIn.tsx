@@ -21,12 +21,12 @@ export function SignIn() {
     try {
       if (isLogin) {
         const data = await authLogin(email, password);
-        login(data.access_token);
+        await login(data.access_token);
         navigate('/');
       } else {
         await authRegister(email, password);
         const data = await authLogin(email, password);
-        login(data.access_token);
+        await login(data.access_token);
         navigate('/');
       }
     } catch (err: any) {

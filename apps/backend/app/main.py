@@ -377,6 +377,10 @@ def moderate_suggested_update_item(
         raise HTTPException(status_code=404, detail="Suggested update not found")
     return res
 
+@app.get("/admin/community-updates", response_model=List[schemas.FeedbackResponse])
+def list_admin_community_updates(limit: int = 50, db: Session = Depends(get_db), admin: str = Depends(auth.get_current_admin)):
+    return crud.get_admin_community_updates(db, limit=limit)
+
 @app.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
     total_spots = db.query(models.Spot).count()

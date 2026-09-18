@@ -6,7 +6,7 @@ interface AuthContextType {
   role: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string) => void;
+  login: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -19,13 +19,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('ffh_token');
-      if (token) {
+      // Ignore string literals that might have been accidentally saved
+      if (token && token !== 'undefined' && token !== 'null') {
         const userData = await getMe();
         setUser(userData);
+      } else {
+        // Clear any invalid string tokens immediately without noisy errors
+        if (token === 'undefined' || token === 'null') {
+          localStorage.removeItem('ffh_token');
+        }
+        setUser(null);
       }
-    } catch (error) {
-      console.error("Auth initialization failed", error);
+    } catch (error: any) {
+      // Only log if it's a real unexpected error, ignore normal "Not authenticated" 401s from expired tokens
+      if (error?.message !== 'Not authenticated') {
+        console.error("Auth initialization failed", error);
+      }
       localStorage.removeItem('ffh_token');
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -35,10 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchUser();
   }, []);
 
-  const login = (token: string) => {
+  const login = async (token: string) => {
     localStorage.setItem('ffh_token', token);
     setIsLoading(true);
-    fetchUser();
+    await fetchUser();
   };
 
   const logout = () => {
