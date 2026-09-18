@@ -28,6 +28,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freefoodhyd}
       - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY:-default_secret_key}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
