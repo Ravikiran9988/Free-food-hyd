@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies (PostGIS requires libpq-dev)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY apps/backend/requirements.txt /app/apps/backend/requirements.txt
+COPY data-pipeline/requirements.txt /app/data-pipeline/requirements.txt
+
+# Create a combined requirements file and install
+RUN cat apps/backend/requirements.txt data-pipeline/requirements.txt > /tmp/requirements.txt \
+    && pip install --no-cache-dir -r /tmp/requirements.txt
+
+COPY apps/backend /app/apps/backend
+COPY data-pipeline /app/data-pipeline
+
+# Make sure python module path is set
+ENV PYTHONPATH=/app/apps/backend/app:/app
+
+CMD ["uvicorn", "apps.backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

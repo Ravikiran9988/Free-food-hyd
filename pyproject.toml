@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "free-food-hyderabad"
+version = "1.0.0"
+description = "A platform for discovering Annadhanam spots in Hyderabad"
+authors = [{name = "Community"}]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

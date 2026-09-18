@@ -1,0 +1,16 @@
+{
+  "name": "Free Food Hyderabad",
+  "short_name": "Free Food Hyd",
+  "description": "Discover Annadhanam spots and free meals in Hyderabad",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

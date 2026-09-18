@@ -1,0 +1,20 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Database
+apps/backend/pgdata/
+
+# OS generated files
+.DS_Store
+Thumbs.db
