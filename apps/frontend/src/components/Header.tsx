@@ -35,36 +35,38 @@ export function Header() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="bg-brand-500 p-1.5 rounded-lg text-white">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="bg-brand-600 p-2 rounded-xl text-white shadow-xs group-hover:bg-brand-700 transition-colors">
               <MapPin className="w-5 h-5" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-slate-900">
+            <span className="font-extrabold text-xl tracking-tight text-slate-900">
               Free Food<span className="text-brand-600">Hyd</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-1.5 lg:gap-3">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  'text-sm font-semibold transition-colors',
+                  'px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
                   location.pathname === link.path
-                    ? 'text-brand-600'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-brand-50 text-brand-700 font-semibold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 )}
               >
                 {link.name}
               </Link>
             ))}
 
+            <div className="h-4 w-px bg-slate-200 mx-1"></div>
+
             {!isAuthenticated ? (
               <Link
                 to="/signin"
-                className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-brand-600 hover:bg-slate-100 transition-all"
               >
                 Sign In
               </Link>
@@ -72,23 +74,27 @@ export function Header() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                  className="flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-800 font-bold text-xs border border-brand-200 hover:ring-2 hover:ring-brand-500/20 transition-all shadow-xs"
+                  title={user?.email}
                 >
-                  <UserIcon className="w-4 h-4" />
+                  {user?.email ? user.email.charAt(0).toUpperCase() : <UserIcon className="w-4 h-4" />}
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-1 overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-                      <p className="text-sm font-medium text-slate-900 truncate">{user?.email}</p>
-                      <p className="text-xs text-slate-500 capitalize">{role} Account</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-1 overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70">
+                      <p className="text-xs text-slate-500">Signed in as</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate">{user?.email}</p>
+                      <span className="inline-block mt-1 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-brand-100 text-brand-800">
+                        {role}
+                      </span>
                     </div>
 
                     <div className="py-1">
                       <Link
                         to="/account"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                       >
                         <UserCircle className="w-4 h-4 text-slate-400" />
                         My Account
@@ -96,7 +102,7 @@ export function Header() {
                       <Link
                         to="/saved"
                         onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                       >
                         <Bookmark className="w-4 h-4 text-slate-400" />
                         Saved Places
@@ -106,7 +112,7 @@ export function Header() {
                         <Link
                           to="/admin"
                           onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-brand-700 font-medium hover:bg-brand-50"
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-brand-700 font-semibold hover:bg-brand-50 transition-colors"
                         >
                           <LayoutDashboard className="w-4 h-4 text-brand-600" />
                           Admin Dashboard
@@ -117,7 +123,7 @@ export function Header() {
                     <div className="border-t border-slate-100 py-1">
                       <button
                         onClick={logout}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign Out
@@ -131,8 +137,9 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-slate-600"
+            className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle Navigation Menu"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>

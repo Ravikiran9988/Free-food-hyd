@@ -159,10 +159,10 @@ export function Explore() {
             </div>
             
             {/* Mobile View Toggle */}
-            <div className="lg:hidden flex bg-slate-100 p-1 rounded-xl shrink-0 border border-slate-200">
+            <div className="lg:hidden flex bg-slate-100 p-1 rounded-2xl shrink-0 border border-slate-200">
               <button 
                 onClick={() => setViewMode('list')}
-                className={`p-2.5 rounded-lg flex items-center gap-1 text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500'}`}
+                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all ${viewMode === 'list' ? 'bg-white shadow-xs text-brand-700' : 'text-slate-500'}`}
                 title="List View"
               >
                 <List className="w-4 h-4" />
@@ -170,7 +170,7 @@ export function Explore() {
               </button>
               <button 
                 onClick={() => setViewMode('map')}
-                className={`p-2.5 rounded-lg flex items-center gap-1 text-xs font-bold transition-all ${viewMode === 'map' ? 'bg-white shadow-sm text-brand-600' : 'text-slate-500'}`}
+                className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all ${viewMode === 'map' ? 'bg-white shadow-xs text-brand-700' : 'text-slate-500'}`}
                 title="Map View"
               >
                 <MapIcon className="w-4 h-4" />
@@ -181,14 +181,14 @@ export function Explore() {
           
           {/* Primary Action Pills - Desktop */}
           <div className="hidden md:flex flex-row items-center justify-between gap-3 pt-1 border-t border-slate-100">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide w-auto">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar w-auto">
               <button
                 onClick={handleNearMeClick}
                 disabled={locationStatus === 'locating'}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
                   sortBy === 'nearest' || userLocation
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    ? 'bg-brand-600 text-white shadow-xs'
+                    : 'bg-white border border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
                 {locationStatus === 'locating' ? (
@@ -201,21 +201,21 @@ export function Explore() {
 
               <button
                 onClick={() => navigate('/today')}
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all shrink-0"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-slate-200 hover:border-slate-300 text-slate-700 flex items-center gap-1.5 transition-all shrink-0"
               >
                 <Calendar className="w-3.5 h-3.5 text-brand-600" />
-                <span>📅 Today</span>
+                <span>Today</span>
               </button>
 
               <button
                 onClick={() => navigate('/upcoming')}
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all shrink-0"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-slate-200 hover:border-slate-300 text-slate-700 flex items-center gap-1.5 transition-all shrink-0"
               >
                 <Clock className="w-3.5 h-3.5 text-amber-600" />
-                <span>🔜 Upcoming</span>
+                <span>Upcoming</span>
               </button>
 
-              <div className="h-4 w-px bg-slate-300 mx-1 hidden sm:block"></div>
+              <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
               {/* Category Pills */}
               <FilterBar 
@@ -237,7 +237,7 @@ export function Explore() {
                   setSortBy(e.target.value);
                   setPage(1);
                 }}
-                className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 outline-none"
+                className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 outline-none shadow-2xs focus:border-brand-500"
               >
                 <option value="">Default (Serving First)</option>
                 <option value="nearest">📍 Nearest First</option>
@@ -352,13 +352,13 @@ export function Explore() {
         
         {/* List View */}
         <div className={`
-          flex-col w-full lg:w-[420px] xl:w-[500px] shrink-0
+          flex-col w-full lg:w-[460px] xl:w-[520px] shrink-0
           ${(viewMode === 'list' || viewMode === 'split') ? 'flex' : 'hidden'}
         `}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-bold text-base sm:text-lg text-slate-900">
+                <h2 className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">
                   {isLoading 
                     ? 'Loading food spots...' 
                     : error 
@@ -383,7 +383,7 @@ export function Explore() {
               >
                 <button 
                   onClick={() => window.location.reload()}
-                  className="mt-4 px-4 py-2 bg-brand-600 text-white rounded-lg font-bold text-sm hover:bg-brand-700"
+                  className="mt-4 px-4 py-2 bg-brand-600 text-white rounded-xl font-bold text-sm hover:bg-brand-700 shadow-xs"
                 >
                   Try Again
                 </button>
@@ -395,7 +395,7 @@ export function Explore() {
               </div>
             ) : spots.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-5">
                   {spots.map((spot) => (
                     <div 
                       key={spot.id}
@@ -404,8 +404,8 @@ export function Explore() {
                         setSelectedSpotId(spot.id);
                         if (window.innerWidth < 1024) setViewMode('map');
                       }}
-                      className={`cursor-pointer transition-all ${
-                        selectedSpotId === spot.id ? 'ring-2 ring-brand-500 rounded-xl' : ''
+                      className={`cursor-pointer transition-all rounded-2xl ${
+                        selectedSpotId === spot.id ? 'ring-2 ring-brand-500 shadow-md' : ''
                       }`}
                     >
                       <SpotCard spot={spot} />

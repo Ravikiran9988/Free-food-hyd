@@ -3,7 +3,7 @@ import { fetchTodaySections } from '../services/api';
 import type { TodaySections } from '../services/api';
 import { SpotCard } from '../components/SpotCard';
 import { EmptyState } from '../components/EmptyState';
-import { Calendar, Clock, Loader2, MapPin } from 'lucide-react';
+import { Calendar, Loader2, MapPin } from 'lucide-react';
 
 export function Today() {
   const [sections, setSections] = useState<TodaySections | null>(null);
@@ -68,13 +68,16 @@ export function Today() {
         ) : sections ? (
           <div className="space-y-12">
             
-            {/* 🟢 Serving Now */}
+            {/* Serving Now */}
             <section className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping"></span>
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                    🟢 Serving Now ({sections.serving_now.length})
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                    Serving Now ({sections.serving_now.length})
                   </h2>
                 </div>
                 <span className="text-xs text-slate-500 font-medium hidden sm:inline">
@@ -89,19 +92,19 @@ export function Today() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-500 text-sm">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-500 text-sm shadow-2xs">
                   No food spots are currently serving at this exact hour. Check Starting Soon or Later Today.
                 </div>
               )}
             </section>
 
-            {/* 🟡 Starting Soon */}
+            {/* Starting Soon */}
             <section className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-3.5 h-3.5 rounded-full bg-amber-500"></span>
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                    🟡 Starting Soon ({sections.starting_soon.length})
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                    Starting Soon ({sections.starting_soon.length})
                   </h2>
                 </div>
                 <span className="text-xs text-slate-500 font-medium hidden sm:inline">
@@ -116,23 +119,23 @@ export function Today() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-500 text-sm">
-                  No upcoming distributions scheduled in the immediate next 90 minutes.
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-500 text-sm shadow-2xs">
+                  No food spots are scheduled to start soon.
                 </div>
               )}
             </section>
 
-            {/* 🕐 Later Today */}
+            {/* Later Today */}
             <section className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <Clock className="w-5 h-5 text-slate-600" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                    🕐 Later Today ({sections.later_today.length})
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                    Later Today ({sections.later_today.length})
                   </h2>
                 </div>
                 <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                  Scheduled later in the day or daily afternoon/evening meals
+                  Scheduled for afternoon or evening distribution
                 </span>
               </div>
 
