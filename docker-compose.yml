@@ -28,6 +28,9 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - CRON_SECRET=${CRON_SECRET:-}
+      - SOURCE_SUPABASE_URL=${SOURCE_SUPABASE_URL:-${SUPABASE_URL:-}}
+      - SOURCE_SUPABASE_KEY=${SOURCE_SUPABASE_KEY:-${SUPABASE_KEY:-}}
     depends_on:
       db:
         condition: service_healthy
