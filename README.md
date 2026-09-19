@@ -4,7 +4,7 @@
 
 Free Food Hyderabad is a community-powered platform for discovering **free meals, Annadhanam, temple meals, community meals, and free food distribution events across Hyderabad**.
 
-> **Live Demo:** https://freefoodhyd.vercel.app  
+> **Live Demo:** https://freefood.axly.in  
 > **Source Code:** https://github.com/Ravikiran9988/Free-food-hyd
 
 The platform combines geospatial search, time-aware event availability, community feedback, automated data ingestion, and admin moderation into one full-stack application.
@@ -169,7 +169,7 @@ Free-food-hyd/
 
 ### 🌐 Application
 
-**https://freefoodhyd.vercel.app**
+**https://freefood.axly.in**
 
 The hosted application is deployed as a Vercel-served React SPA. The frontend uses the `VITE_API_URL` environment variable to connect to the FastAPI backend.
 
