@@ -26,7 +26,7 @@ jobs:
 
           echo "Sending sync trigger to ${{ secrets.BACKEND_API_URL }}/admin/sync..."
 
-          HTTP_STATUS=$(curl -s -o response.txt -w "%{http_code}" \
+          HTTP_STATUS=$(curl -sS --max-time 900 -o response.txt -w "%{http_code}" \
             -X POST "${{ secrets.BACKEND_API_URL }}/admin/sync" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json")
