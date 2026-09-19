@@ -5,14 +5,14 @@ The application uses a root `.env` file for local/Docker configuration. Start fr
 ## Application Database (FastAPI Storage)
 
 - **`DATABASE_URL`** — SQLAlchemy connection string used by the FastAPI backend and sync engine to store application data.
-  - **Local Docker:** `postgresql://postgres:postgres@db:5432/freefoodhyd`
-  - **Local Host:** `postgresql://postgres:postgres@localhost:5433/freefoodhyd`
+  - **Local Docker:** `postgresql://postgres:postgres@db:5432/freefood`
+  - **Local Host:** `postgresql://postgres:postgres@localhost:5433/freefood`
   - **Cloud Supabase (Production):** `postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require`
 
 Docker Compose local variables:
 - **`POSTGRES_USER`** — PostgreSQL username used by Docker.
 - **`POSTGRES_PASSWORD`** — PostgreSQL password used by Docker.
-- **`POSTGRES_DB`** — PostgreSQL database name (`freefoodhyd`).
+- **`POSTGRES_DB`** — PostgreSQL database name (`freefood`).
 - **`POSTGRES_HOST`** — database host.
 - **`POSTGRES_PORT`** — database port.
 
