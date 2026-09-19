@@ -50,8 +50,14 @@ def run_sync():
         imported_count = 0
         updated_count = 0
         skipped_count = 0
+
+        logger.info("Pre-fetching existing records for high-performance sync...")
+        existing_spots = {s.source_id: s for s in db.query(models.Spot).all() if s.source_id}
+        existing_events = {(e.spot_id, e.source_event_id): e for e in db.query(models.Event).all() if e.source_event_id}
+        existing_meals = {(m.spot_id, m.source_type): m for m in db.query(models.MealDetail).all()}
+        logger.info(f"Existing records in DB: {len(existing_spots)} spots, {len(existing_events)} events.")
         
-        for item in data:
+        for idx, item in enumerate(data, 1):
             source_id = str(item.get("id") or "").strip()
             if not source_id:
                 skipped_count += 1
@@ -82,7 +88,7 @@ def run_sync():
                 
             location = f"SRID=4326;POINT({lon} {lat})" if lat and lon else None
 
-            existing_spot = db.query(models.Spot).filter(models.Spot.source_id == source_id).first()
+            existing_spot = existing_spots.get(source_id)
             
             if not existing_spot:
                 spot = models.Spot(
@@ -101,6 +107,7 @@ def run_sync():
                 )
                 db.add(spot)
                 db.flush()
+                existing_spots[source_id] = spot
                 imported_count += 1
             else:
                 spot = existing_spot
@@ -136,7 +143,7 @@ def run_sync():
             except (ValueError, TypeError):
                 duration_hours = 0.0
 
-            existing_event = db.query(models.Event).filter(models.Event.spot_id == spot.id, models.Event.source_event_id == source_id).first()
+            existing_event = existing_events.get((spot.id, source_id))
             if not existing_event:
                 event = models.Event(
                     spot_id=spot.id,
@@ -152,6 +159,7 @@ def run_sync():
                 )
                 db.add(event)
                 db.flush()
+                existing_events[(spot.id, source_id)] = event
             else:
                 event = existing_event
                 event.event_date = start_date if not is_dummy_date else None
@@ -165,10 +173,7 @@ def run_sync():
                 db.flush()
 
             if meal_details_text:
-                existing_meal = db.query(models.MealDetail).filter(
-                    models.MealDetail.spot_id == spot.id, 
-                    models.MealDetail.source_type == "imported"
-                ).first()
+                existing_meal = existing_meals.get((spot.id, "imported"))
                 if not existing_meal:
                     meal_obj = models.MealDetail(
                         spot_id=spot.id,
@@ -177,8 +182,14 @@ def run_sync():
                         source_type="imported"
                     )
                     db.add(meal_obj)
+                    db.flush()
+                    existing_meals[(spot.id, "imported")] = meal_obj
                 else:
                     existing_meal.details = meal_details_text
+
+            if idx % 500 == 0 or idx == len(data):
+                db.commit()
+                logger.info(f"Sync progress: {idx}/{len(data)} records processed ({imported_count} new, {updated_count} updated)...")
 
         expired_count = 0
         missing_spots = db.query(models.Spot).filter(models.Spot.source_type == "imported", ~models.Spot.source_id.in_(active_source_ids)).all()
