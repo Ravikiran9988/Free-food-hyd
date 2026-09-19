@@ -37,8 +37,9 @@ def run_sync():
     file_path = os.path.join(base_dir, "data", "processed", "annadhanam_spots_clean.json")
     
     if not os.path.exists(file_path):
-        logger.error(f"Dataset file not found at: {file_path}. Did the scraper run?")
-        return
+        raise FileNotFoundError(
+            f"Dataset file not found at: {file_path}. Did the scraper run?"
+        )
         
     with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -211,11 +212,24 @@ def run_sync():
         )
         db.add(sync_run)
         db.commit()
-        logger.info(f"Sync complete. New: {imported_count}, Updated: {updated_count}, Expired: {expired_count}")
+        result = {
+            "total_records": len(data),
+            "imported": imported_count,
+            "updated": updated_count,
+            "skipped": skipped_count,
+            "expired": expired_count,
+            "status": "completed",
+        }
+        logger.info(
+            f"Sync complete. New: {imported_count}, Updated: {updated_count}, "
+            f"Expired: {expired_count}, Skipped: {skipped_count}"
+        )
+        return result
 
     except Exception as e:
         db.rollback()
         logger.error(f"Error during sync: {e}", exc_info=True)
+        raise
     finally:
         db.close()
 
