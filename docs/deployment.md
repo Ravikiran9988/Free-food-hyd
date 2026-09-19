@@ -31,8 +31,10 @@ Free Food Hyderabad supports two production deployment architectures:
    - `ADMIN_SECRET_KEY`: A long, cryptographically secure random string for signing JWT tokens.
    - `CORS_ORIGINS`: Comma-separated allowed frontend domains, e.g.:
      `https://free-food-hyd.vercel.app,http://localhost:5173`
+   - `SOURCE_SUPABASE_URL` & `SOURCE_SUPABASE_KEY`: External read-only credentials to scrape upstream Annadhanam spots.
    - `CRON_SECRET`: A secure random token used by your scheduler/cron runner to trigger syncs.
    - `ADMIN_USERNAME` & `ADMIN_PASSWORD`: For initial admin seeding via seed script.
+
 
 ### C. Frontend (Vercel)
 1. Import the repository into [Vercel](https://vercel.com).

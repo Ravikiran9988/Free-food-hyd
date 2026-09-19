@@ -73,13 +73,20 @@ Copy `.env.example` to `.env` before running the stack. The template documents t
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection used by the backend |
+| `DATABASE_URL` | Application PostgreSQL/PostGIS connection used by FastAPI backend and sync engine |
 | `ADMIN_SECRET_KEY` | JWT signing/verification secret; keep stable across backend instances |
 | `CORS_ORIGINS` | Allowed browser origins; restrict in production |
 | `ADMIN_USERNAME` | Admin bootstrap email/username used by `seed.py` |
 | `ADMIN_PASSWORD` | Admin bootstrap password used by `seed.py` |
+| `SOURCE_SUPABASE_URL` | Upstream Supabase REST API endpoint for scraper data ingestion |
+| `SOURCE_SUPABASE_KEY` | Upstream Supabase anon key used to query the read-only `location_feed` table |
 | `SYNC_SCHEDULE_HOUR` | Scheduled sync hour in UTC |
-| `VITE_API_URL` | Optional frontend API URL, configured in the frontend Vite environment |
+| `CRON_SECRET` | Secret token to authenticate remote HTTP sync triggers (`POST /admin/sync`) |
+| `VITE_API_URL` | Frontend API URL, configured in the frontend Vite environment |
+
+> [!NOTE]
+> `DATABASE_URL` is your application database. `SOURCE_SUPABASE_URL` and `SOURCE_SUPABASE_KEY` are external read-only credentials used solely by the scraper.
+
 
 Never commit the real `.env`, passwords, JWTs, password hashes, or production secrets.
 

@@ -38,18 +38,21 @@ except ImportError:
 # ==========================================
 # CONFIGURATION & CONSTANTS
 # ==========================================
-DEFAULT_SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-DEFAULT_API_KEY = os.getenv("SUPABASE_KEY", "")
+# Upstream Annadhanam Spots Source Supabase REST API
+# Priority: SOURCE_SUPABASE_URL / SOURCE_SUPABASE_KEY -> fallback to SUPABASE_URL / SUPABASE_KEY
+DEFAULT_SUPABASE_URL = os.getenv("SOURCE_SUPABASE_URL") or os.getenv("SUPABASE_URL", "")
+DEFAULT_API_KEY = os.getenv("SOURCE_SUPABASE_KEY") or os.getenv("SUPABASE_KEY", "")
 DEFAULT_TARGET_URL = os.getenv("TARGET_URL", "https://annadhanamspots.in/")
 DEFAULT_BATCH_SIZE = int(os.getenv("BATCH_SIZE", "1000"))
 DEFAULT_REQUEST_DELAY = float(os.getenv("REQUEST_DELAY", "0.2"))
 DEFAULT_MAX_RETRIES = int(os.getenv("MAX_RETRIES", "5"))
 
+
 # IST Timezone (+05:30) for local display
 IST_TZ = timezone(timedelta(hours=5, minutes=30))
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data" / "processed"
 LOGS_DIR = BASE_DIR / "logs"
 
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -648,12 +651,17 @@ def main():
     if args.inspect_playwright:
         url, key = AnnadhanamScraper.discover_credentials_with_playwright()
 
+    if not url or not key:
+        logger.error("Missing source credentials. Please set SOURCE_SUPABASE_URL and SOURCE_SUPABASE_KEY in your .env file.")
+        return
+
     scraper = AnnadhanamScraper(
         supabase_url=url,
         api_key=key,
         batch_size=args.batch_size,
         output_dir=out_dir
     )
+
 
     # Determine mode
     is_active_only = args.active_only and not (args.all and not args.active_only)

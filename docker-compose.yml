@@ -42,9 +42,10 @@ services:
     command: python data-pipeline/src/scheduler.py
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freefoodhyd}
-      - SUPABASE_URL=${SUPABASE_URL:-}
-      - SUPABASE_KEY=${SUPABASE_KEY:-}
+      - SOURCE_SUPABASE_URL=${SOURCE_SUPABASE_URL:-${SUPABASE_URL:-}}
+      - SOURCE_SUPABASE_KEY=${SOURCE_SUPABASE_KEY:-${SUPABASE_KEY:-}}
       - SYNC_SCHEDULE_HOUR=${SYNC_SCHEDULE_HOUR:-2}
+
     depends_on:
       db:
         condition: service_healthy

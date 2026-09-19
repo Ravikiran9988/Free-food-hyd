@@ -1,15 +1,16 @@
-name: Daily Free Food Data Sync
+name: Free Food Data Sync
 
 on:
   schedule:
-    # Runs daily at 02:00 UTC (07:30 IST)
-    - cron: '0 2 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+    # Runs every 6 hours: 02:00, 08:00, 14:00, 20:00 UTC
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
     name: Trigger Backend Data Sync
     runs-on: ubuntu-latest
+
     steps:
       - name: Trigger Remote Sync Endpoint
         run: |
@@ -17,17 +18,22 @@ jobs:
             echo "::error::BACKEND_API_URL secret is not configured in GitHub repository secrets."
             exit 1
           fi
-          
+
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET secret is not configured in GitHub repository secrets."
+            exit 1
+          fi
+
           echo "Sending sync trigger to ${{ secrets.BACKEND_API_URL }}/admin/sync..."
-          
+
           HTTP_STATUS=$(curl -s -o response.txt -w "%{http_code}" \
             -X POST "${{ secrets.BACKEND_API_URL }}/admin/sync" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json")
-          
+
           cat response.txt
           echo ""
-          
+
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "Sync completed successfully!"
           else
