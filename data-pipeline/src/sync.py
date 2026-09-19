@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import math
+import uuid
 from datetime import datetime
 import sys
 
@@ -43,7 +44,7 @@ def run_sync():
         data = json.load(f)
         
     logger.info(f"Loaded {len(data)} records from scraper. Beginning graceful sync...")
-    db = SessionLocal()
+    db = SessionLocal(expire_on_commit=False)
     
     try:
         active_source_ids = set()
@@ -91,7 +92,9 @@ def run_sync():
             existing_spot = existing_spots.get(source_id)
             
             if not existing_spot:
+                spot_id = str(uuid.uuid4())
                 spot = models.Spot(
+                    id=spot_id,
                     source_id=source_id,
                     name=name,
                     area_name=area_name,
@@ -106,7 +109,6 @@ def run_sync():
                     report_count=int(item.get("report_count") or 0),
                 )
                 db.add(spot)
-                db.flush()
                 existing_spots[source_id] = spot
                 imported_count += 1
             else:
@@ -145,7 +147,9 @@ def run_sync():
 
             existing_event = existing_events.get((spot.id, source_id))
             if not existing_event:
+                event_id = str(uuid.uuid4())
                 event = models.Event(
+                    id=event_id,
                     spot_id=spot.id,
                     source_event_id=source_id,
                     event_date=start_date if not is_dummy_date else None,
@@ -158,7 +162,6 @@ def run_sync():
                     is_recurring_or_time_only=is_dummy_date,
                 )
                 db.add(event)
-                db.flush()
                 existing_events[(spot.id, source_id)] = event
             else:
                 event = existing_event
@@ -170,19 +173,18 @@ def run_sync():
                 event.duration_hours = duration_hours
                 event.status = status
                 event.is_recurring_or_time_only = is_dummy_date
-                db.flush()
 
             if meal_details_text:
                 existing_meal = existing_meals.get((spot.id, "imported"))
                 if not existing_meal:
                     meal_obj = models.MealDetail(
+                        id=str(uuid.uuid4()),
                         spot_id=spot.id,
                         event_id=event.id,
                         details=meal_details_text,
                         source_type="imported"
                     )
                     db.add(meal_obj)
-                    db.flush()
                     existing_meals[(spot.id, "imported")] = meal_obj
                 else:
                     existing_meal.details = meal_details_text

@@ -159,7 +159,7 @@ def get_map_points(
     user_lon: Optional[float] = None,
 ) -> List[dict]:
     """Returns lightweight point data for map clustering."""
-    query = db.query(models.Spot).join(models.Spot.events, isouter=True).filter(
+    query = db.query(models.Spot).options(selectinload(models.Spot.events)).filter(
         models.Spot.latitude != 0.0,
         models.Spot.longitude != 0.0,
         models.Spot.latitude.isnot(None),
@@ -173,6 +173,7 @@ def get_map_points(
             query = query.filter(models.Spot.category == category)
 
     if status and status.lower() != "all":
+        query = query.join(models.Spot.events, isouter=True)
         if status in ("active", "serving_now"):
             query = query.filter(or_(models.Event.status == "active", models.Event.is_recurring_or_time_only == True))
         elif status in ("upcoming", "starting_soon"):
