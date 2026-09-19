@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://freefoodhyderabad.com/sitemap.xml
+Sitemap: https://freefooderabad.com/sitemap.xml
