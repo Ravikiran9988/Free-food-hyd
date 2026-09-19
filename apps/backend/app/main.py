@@ -499,9 +499,19 @@ def trigger_sync(
         data_pipeline_dir = Path(__file__).resolve().parent.parent.parent / "data-pipeline" / "src"
         if str(data_pipeline_dir) not in sys.path:
             sys.path.insert(0, str(data_pipeline_dir))
+
+        # 1. Fresh upstream scrape & validation
+        from scraper import run_scraper
+        run_scraper(active_only=False)
+
+        # 2. Synchronize clean dataset into database
         from sync import run_sync
         run_sync()
-        return {"status": "success", "message": "Data pipeline synchronization completed successfully."}
+
+        return {
+            "status": "success",
+            "message": "Fresh upstream scrape, validation, and database synchronization completed successfully.",
+        }
     except Exception as e:
         logger.error(f"Sync trigger failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Sync execution failed: {str(e)}")

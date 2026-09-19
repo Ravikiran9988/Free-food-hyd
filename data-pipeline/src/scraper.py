@@ -587,7 +587,47 @@ class AnnadhanamScraper:
         print("=" * 76 + "\n")
 
 
+def run_scraper(
+    active_only: bool = False,
+    search: Optional[str] = None,
+    output_dir: Optional[Path] = None,
+) -> Tuple[Path, Path, Path]:
+    """
+    Programmatic entry point for scraping and validating upstream Annadhanam Spots.
+    Fetches raw listings, cleans and validates schema, and writes clean JSON/CSV.
+    """
+    url = DEFAULT_SUPABASE_URL
+    key = DEFAULT_API_KEY
+    if not url or not key:
+        raise ValueError(
+            "Missing source credentials. Please set SOURCE_SUPABASE_URL and SOURCE_SUPABASE_KEY."
+        )
+
+    out_dir = Path(output_dir) if output_dir else DATA_DIR
+    scraper = AnnadhanamScraper(
+        supabase_url=url,
+        api_key=key,
+        batch_size=DEFAULT_BATCH_SIZE,
+        output_dir=out_dir,
+    )
+
+    start_time = time.time()
+    raw_records = scraper.fetch_listings(
+        active_only=active_only, search_query=search
+    )
+    if not raw_records:
+        raise RuntimeError("No records were retrieved from upstream source.")
+
+    raw_json_path, clean_json_path, clean_csv_path = scraper.save_data(raw_records)
+    elapsed = time.time() - start_time
+    logger.info(
+        f"Scraping & Cleaning completed in {elapsed:.2f} seconds ({len(raw_records)} records)."
+    )
+    return raw_json_path, clean_json_path, clean_csv_path
+
+
 def main():
+
     parser = argparse.ArgumentParser(description="Annadhanam Spots Robust Production Scraper")
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
