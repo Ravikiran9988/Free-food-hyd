@@ -85,17 +85,29 @@ export function Header() {
                     </div>
 
                     <div className="py-1">
-                      <Link to="/" className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <Link
+                        to="/account"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      >
                         <UserCircle className="w-4 h-4 text-slate-400" />
                         My Account
                       </Link>
-                      <Link to="/saved" className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <Link
+                        to="/saved"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      >
                         <Bookmark className="w-4 h-4 text-slate-400" />
                         Saved Places
                       </Link>
                       
                       {role === 'admin' && (
-                        <Link to="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-700 font-medium hover:bg-brand-50">
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-brand-700 font-medium hover:bg-brand-50"
+                        >
                           <LayoutDashboard className="w-4 h-4 text-brand-600" />
                           Admin Dashboard
                         </Link>
@@ -194,7 +206,7 @@ export function Header() {
                   <p className="text-sm font-medium text-slate-900">{user?.email}</p>
                 </div>
                 <Link
-                  to="/"
+                  to="/account"
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-semibold text-slate-700 hover:bg-slate-50"
                 >

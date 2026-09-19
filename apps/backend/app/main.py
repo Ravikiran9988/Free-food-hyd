@@ -324,6 +324,18 @@ def get_me(current_user = Depends(auth.get_current_user)):
         )
     return current_user
 
+@app.put("/auth/me", response_model=schemas.UserResponse)
+def update_my_profile(
+    profile_data: schemas.UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    try:
+        updated = crud.update_user_profile(db, current_user, profile_data)
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.get("/admin/submissions", response_model=List[schemas.CommunitySubmissionResponse])
 def list_admin_submissions(status: str = "pending", db: Session = Depends(get_db), admin: str = Depends(auth.get_current_admin)):
     return crud.get_admin_submissions(db, status=status)
@@ -397,3 +409,48 @@ def get_stats(db: Session = Depends(get_db), admin=Depends(auth.get_current_admi
         "total_submissions": total_submissions,
         "total_suggested_updates": total_suggested_updates
     }
+
+@app.get("/admin/users", response_model=List[schemas.UserResponse])
+def list_admin_users(
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    admin = Depends(auth.get_current_admin)
+):
+    return crud.get_admin_users(db, search=search)
+
+@app.put("/admin/users/{user_id}/role", response_model=schemas.UserResponse)
+def update_user_role_endpoint(
+    user_id: str,
+    role_data: schemas.UserRoleUpdate,
+    db: Session = Depends(get_db),
+    admin = Depends(auth.get_current_admin)
+):
+    new_role = role_data.role.strip().lower()
+    if new_role not in ("admin", "user"):
+        raise HTTPException(status_code=400, detail="Role must be either 'admin' or 'user'")
+    
+    current_admin_id = getattr(admin, 'id', None) or (admin.get('id') if isinstance(admin, dict) else None)
+    if user_id == current_admin_id and new_role != "admin":
+        admin_count = db.query(models.User).filter(models.User.role == "admin").count()
+        if admin_count <= 1:
+            raise HTTPException(status_code=400, detail="Cannot demote the only remaining administrator.")
+
+    user = crud.update_user_role(db, user_id=user_id, new_role=new_role)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@app.delete("/admin/users/{user_id}")
+def delete_user_endpoint(
+    user_id: str,
+    db: Session = Depends(get_db),
+    admin = Depends(auth.get_current_admin)
+):
+    current_admin_id = getattr(admin, 'id', None) or (admin.get('id') if isinstance(admin, dict) else None)
+    if user_id == current_admin_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own admin account.")
+    
+    success = crud.delete_user(db, user_id=user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"status": "success", "message": "User deleted successfully"}

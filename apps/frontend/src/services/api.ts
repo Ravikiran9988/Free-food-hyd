@@ -456,3 +456,55 @@ export async function authRegister(email: string, password: string) {
   return res.json();
 }
 
+export async function updateUserProfile(data: {
+  email?: string;
+  current_password?: string;
+  new_password?: string;
+}): Promise<User> {
+  const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to update profile');
+  }
+  return res.json();
+}
+
+export async function fetchAdminUsers(search?: string): Promise<User[]> {
+  const query = search ? `?search=${encodeURIComponent(search)}` : '';
+  const res = await fetch(`${API_BASE_URL}/admin/users${query}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch users: ${res.statusText}`);
+  return res.json();
+}
+
+export async function updateAdminUserRole(userId: string, role: string): Promise<User> {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/role`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to update user role');
+  }
+  return res.json();
+}
+
+export async function deleteAdminUser(userId: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to delete user');
+  }
+  return res.json();
+}
+
+

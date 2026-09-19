@@ -607,3 +607,43 @@ def moderate_suggested_update(db: Session, update_id: str, action: str) -> Optio
 
 def get_admin_community_updates(db: Session, limit: int = 50) -> List[models.AvailabilityFeedback]:
     return db.query(models.AvailabilityFeedback).order_by(models.AvailabilityFeedback.created_at.desc()).limit(limit).all()
+
+def get_admin_users(db: Session, search: Optional[str] = None) -> List[models.User]:
+    query = db.query(models.User)
+    if search and search.strip():
+        query = query.filter(models.User.email.ilike(f"%{search.strip()}%"))
+    return query.order_by(models.User.created_at.desc()).all()
+
+def update_user_role(db: Session, user_id: str, new_role: str) -> Optional[models.User]:
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return None
+    user.role = new_role
+    db.commit()
+    db.refresh(user)
+    return user
+
+def delete_user(db: Session, user_id: str) -> bool:
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return False
+    db.delete(user)
+    db.commit()
+    return True
+
+def update_user_profile(db: Session, user: models.User, data: schemas.UserProfileUpdate) -> models.User:
+    from auth import verify_password, get_password_hash
+    if data.new_password:
+        if not data.current_password or not verify_password(data.current_password, user.hashed_password):
+            raise ValueError("Current password is incorrect.")
+        user.hashed_password = get_password_hash(data.new_password)
+    
+    if data.email and data.email.strip().lower() != user.email.lower():
+        existing = db.query(models.User).filter(models.User.email == data.email.strip().lower()).first()
+        if existing and existing.id != user.id:
+            raise ValueError("This email is already in use by another account.")
+        user.email = data.email.strip().lower()
+        
+    db.commit()
+    db.refresh(user)
+    return user

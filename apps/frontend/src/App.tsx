@@ -8,6 +8,7 @@ import { SuggestUpdate } from './pages/SuggestUpdate';
 import { ReportInfo } from './pages/ReportInfo';
 import { SavedSpots } from './pages/SavedSpots';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { MyAccount } from './pages/MyAccount';
 import { Today } from './pages/Today';
 import { Upcoming } from './pages/Upcoming';
 import { SignIn } from './pages/SignIn';
@@ -28,6 +29,11 @@ function App() {
           <Route path="/upcoming" element={<Upcoming />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/saved" element={<SavedSpots />} />
+
+          {/* Protected Routes for Authenticated Users */}
+          <Route element={<ProtectedRoute requireAdmin={false} />}>
+            <Route path="/account" element={<MyAccount />} />
+          </Route>
 
           {/* Protected Routes for Admins */}
           <Route element={<ProtectedRoute requireAdmin={true} />}>
