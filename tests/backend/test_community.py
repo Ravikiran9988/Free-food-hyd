@@ -1,4 +1,12 @@
 import unittest
+import sys
+import os
+from pathlib import Path
+
+backend_app_dir = Path(__file__).resolve().parent.parent.parent / "apps" / "backend" / "app"
+if str(backend_app_dir) not in sys.path:
+    sys.path.insert(0, str(backend_app_dir))
+
 from datetime import datetime, timedelta
 from time_utils import compute_event_realtime_status, aggregate_feedbacks, parse_time_str
 from database import SessionLocal, Base, engine

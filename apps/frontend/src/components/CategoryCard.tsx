@@ -24,7 +24,7 @@ export function CategoryCard({ title, icon, onClick, isActive }: CategoryCardPro
       )}>
         {icon}
       </div>
-      <span className="font-semibold text-xs sm:text-sm text-center line-clamp-1">{title}</span>
+      <span className="font-semibold text-xs sm:text-sm text-center leading-tight line-clamp-2 min-h-[2.25rem] flex items-center justify-center">{title}</span>
     </button>
   );
 }

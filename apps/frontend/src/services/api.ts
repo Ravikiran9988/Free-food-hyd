@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = RAW_API_URL.replace(/\/+$/, '');
 
 export interface CommunityConfirmation {
   confirmed_count: number;
@@ -506,5 +507,18 @@ export async function deleteAdminUser(userId: string): Promise<{ status: string;
   }
   return res.json();
 }
+
+export async function triggerAdminSync(): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE_URL}/admin/sync`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to trigger data sync');
+  }
+  return res.json();
+}
+
 
 

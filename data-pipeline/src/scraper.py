@@ -38,14 +38,8 @@ except ImportError:
 # ==========================================
 # CONFIGURATION & CONSTANTS
 # ==========================================
-DEFAULT_SUPABASE_URL = os.getenv(
-    "SUPABASE_URL",
-    "https://qqpjgaxwphsjtjqnjodw.supabase.co/rest/v1"
-)
-DEFAULT_API_KEY = os.getenv(
-    "SUPABASE_KEY",
-    "sb_publishable_HIBN1dlRDgixgb-SZxRosg_vcBwGrMM"
-)
+DEFAULT_SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+DEFAULT_API_KEY = os.getenv("SUPABASE_KEY", "")
 DEFAULT_TARGET_URL = os.getenv("TARGET_URL", "https://annadhanamspots.in/")
 DEFAULT_BATCH_SIZE = int(os.getenv("BATCH_SIZE", "1000"))
 DEFAULT_REQUEST_DELAY = float(os.getenv("REQUEST_DELAY", "0.2"))

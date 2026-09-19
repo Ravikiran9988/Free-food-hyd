@@ -20,11 +20,19 @@ import auth
 from datetime import timedelta, datetime
 from fastapi.security import OAuth2PasswordRequestForm
 from anti_abuse import get_client_ip, check_rate_limit, check_feedback_cooldown, check_duplicate_submission
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Ensure tables exist
+# Ensure PostGIS extension and database tables exist
+try:
+    with engine.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+        conn.commit()
+except Exception as e:
+    logger.info(f"PostGIS extension check completed: {e}")
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -33,14 +41,16 @@ app = FastAPI(
     version="2.1.0"
 )
 
-# CORS middleware
+# CORS middleware: browsers reject credentialed requests if origin is '*'
+allow_credentials = "*" not in settings.CORS_ORIGINS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def read_root():
@@ -454,3 +464,45 @@ def delete_user_endpoint(
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
     return {"status": "success", "message": "User deleted successfully"}
+
+@app.post("/admin/sync")
+def trigger_sync(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Trigger data pipeline sync.
+    Can be authorized via:
+    1. Admin Bearer token (Authorization header)
+    2. Shared secret (X-Cron-Secret header matching CRON_SECRET)
+    """
+    cron_secret_header = request.headers.get("X-Cron-Secret")
+    is_cron_authorized = bool(
+        settings.CRON_SECRET and cron_secret_header and cron_secret_header == settings.CRON_SECRET
+    )
+
+    if not is_cron_authorized:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Authentication required (Admin token or valid X-Cron-Secret)")
+        token = auth_header.split(" ", 1)[1]
+        try:
+            payload = auth.jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+            email = payload.get("sub")
+            user = db.query(models.User).filter(models.User.email == email).first()
+            if not user or user.role != "admin":
+                raise HTTPException(status_code=403, detail="Admin role required")
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    try:
+        data_pipeline_dir = Path(__file__).resolve().parent.parent.parent / "data-pipeline" / "src"
+        if str(data_pipeline_dir) not in sys.path:
+            sys.path.insert(0, str(data_pipeline_dir))
+        from sync import run_sync
+        run_sync()
+        return {"status": "success", "message": "Data pipeline synchronization completed successfully."}
+    except Exception as e:
+        logger.error(f"Sync trigger failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Sync execution failed: {str(e)}")
+

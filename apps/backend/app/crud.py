@@ -417,7 +417,11 @@ def get_upcoming_events(db: Session, limit: int = 50) -> List[dict]:
     return [format_spot_summary(s) for s in spots]
 
 def get_serving_now_events(db: Session, limit: int = 50) -> List[dict]:
-    fetch_limit = max(limit * 3, 30)
+    utc_now = datetime.utcnow()
+    ist_now = utc_now + timedelta(hours=5, minutes=30)
+    today_str = ist_now.strftime("%Y-%m-%d")
+
+    fetch_limit = max(limit * 6, 80)
     spots = (
         db.query(models.Spot)
         .join(models.Spot.events)
@@ -426,17 +430,26 @@ def get_serving_now_events(db: Session, limit: int = 50) -> List[dict]:
             selectinload(models.Spot.meal_details),
             selectinload(models.Spot.feedbacks)
         )
-        .filter(or_(models.Event.status == "active", models.Event.is_recurring_or_time_only == True))
+        .filter(or_(models.Event.event_date == today_str, models.Event.is_recurring_or_time_only == True))
         .distinct()
         .limit(fetch_limit)
         .all()
     )
     summaries = [format_spot_summary(s) for s in spots]
-    serving = [s for s in summaries if s["live_status"] == "serving_now" or s["status"] == "active"]
+    serving = [s for s in summaries if s["live_status"] == "serving_now"]
+    # Fallback to starting_soon or recurring if fewer than limit are currently serving
+    if len(serving) < limit:
+        serving_ids = {s["id"] for s in serving}
+        additional = [s for s in summaries if s["id"] not in serving_ids and s["live_status"] in ("starting_soon", "recurring_time_only")]
+        serving.extend(additional)
     return serving[:limit]
 
 def get_starting_soon_events(db: Session, limit: int = 50) -> List[dict]:
-    fetch_limit = max(limit * 3, 30)
+    utc_now = datetime.utcnow()
+    ist_now = utc_now + timedelta(hours=5, minutes=30)
+    today_str = ist_now.strftime("%Y-%m-%d")
+
+    fetch_limit = max(limit * 6, 80)
     spots = (
         db.query(models.Spot)
         .join(models.Spot.events)
@@ -445,13 +458,13 @@ def get_starting_soon_events(db: Session, limit: int = 50) -> List[dict]:
             selectinload(models.Spot.meal_details),
             selectinload(models.Spot.feedbacks)
         )
-        .filter(or_(models.Event.status == "upcoming", models.Event.status == "active"))
+        .filter(or_(models.Event.event_date >= today_str, models.Event.is_recurring_or_time_only == True))
         .distinct()
         .limit(fetch_limit)
         .all()
     )
     summaries = [format_spot_summary(s) for s in spots]
-    starting_soon = [s for s in summaries if s["live_status"] in ("starting_soon", "upcoming")]
+    starting_soon = [s for s in summaries if s["live_status"] in ("starting_soon", "upcoming") and (not s.get("start_date") or s["start_date"] >= today_str)]
     return starting_soon[:limit]
 
 def get_nearby_spots(db: Session, lat: float, lon: float, max_distance_km: float = 25.0, limit: int = 50) -> List[dict]:

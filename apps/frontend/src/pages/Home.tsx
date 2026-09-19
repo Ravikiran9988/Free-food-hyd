@@ -257,7 +257,7 @@ export function Home() {
               <p className="text-xs md:text-sm text-slate-500 mt-0.5">Explore meals organized by type and distribution style</p>
             </div>
           </div>
-          <div className="flex md:grid overflow-x-auto md:overflow-visible pb-2 md:pb-0 no-scrollbar md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex md:grid overflow-x-auto md:overflow-visible pb-2 md:pb-0 no-scrollbar md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-3.5 -mx-4 px-4 md:mx-0 md:px-0">
             {categories.map((cat) => (
               <div key={cat.slug} className="shrink-0 w-36 sm:w-40 md:w-auto">
                 <CategoryCard 
