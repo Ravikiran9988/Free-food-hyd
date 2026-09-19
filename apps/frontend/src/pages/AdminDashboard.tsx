@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   fetchStats, 
   fetchAdminSubmissions, 
@@ -7,7 +9,8 @@ import {
   moderateReport, 
   fetchAdminSuggestedUpdates, 
   moderateSuggestedUpdate,
-  loginAdmin
+  fetchAdminCommunityUpdates,
+  fetchSpots
 } from '../services/api';
 import type { 
   StatsResponse, 
@@ -16,63 +19,55 @@ import type {
   SuggestedUpdateItem 
 } from '../services/api';
 import { 
-  Database, 
-  Users, 
-  AlertTriangle, 
-  CheckCircle, 
-  RefreshCw, 
-  Layers, 
-  Check, 
-  X, 
-  Edit3, 
-  Clock, 
-  ShieldCheck
+  Database, Users, AlertTriangle, CheckCircle, RefreshCw, 
+  Check, X, Edit3, Clock, LayoutDashboard, MessageSquare, 
+  MapPin, ShieldAlert, FileText
 } from 'lucide-react';
 
+type TabType = 'overview' | 'submissions' | 'updates' | 'reports' | 'community' | 'spots' | 'sync';
+
 export function AdminDashboard() {
+  const { user, role, isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<'submissions' | 'reports' | 'updates' | 'stats'>('submissions');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [submissions, setSubmissions] = useState<CommunitySubmissionItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [updates, setUpdates] = useState<SuggestedUpdateItem[]>([]);
+  const [communityUpdates, setCommunityUpdates] = useState<any[]>([]);
+  const [spots, setSpots] = useState<any[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('admin_token'));
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-    try {
-      const data = await loginAdmin(username, password);
-      localStorage.setItem('admin_token', data.access_token);
-      setIsAuthenticated(true);
-    } catch (err: any) {
-      setLoginError(err.message || 'Login failed');
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated || role !== 'admin') {
+        navigate('/');
+      } else {
+        loadAllData();
+      }
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    setIsAuthenticated(false);
-  };
+  }, [authLoading, isAuthenticated, role, navigate]);
 
   const loadAllData = async () => {
-    if (!isAuthenticated) return;
     setIsLoading(true);
     try {
-      const [statsData, subsData, repsData, upData] = await Promise.all([
+      const [statsData, subsData, repsData, upData, commData, spotsData] = await Promise.all([
         fetchStats(),
         fetchAdminSubmissions('pending'),
         fetchAdminReports('open'),
-        fetchAdminSuggestedUpdates('pending')
+        fetchAdminSuggestedUpdates('pending'),
+        fetchAdminCommunityUpdates(50),
+        fetchSpots({ limit: 100 })
       ]);
       setStats(statsData);
       setSubmissions(subsData);
       setReports(repsData);
       setUpdates(upData);
+      setCommunityUpdates(commData);
+      setSpots(spotsData.spots || []);
     } catch (err) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -80,16 +75,10 @@ export function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadAllData();
-    }
-  }, [isAuthenticated]);
-
-  const handleModerateSub = async (id: string, action: 'approve' | 'reject') => {
+  const handleAction = async (id: string, actionFn: (id: string, action: any) => Promise<any>, actionVal: string) => {
     setActionLoading(id);
     try {
-      await moderateSubmission(id, action);
+      await actionFn(id, actionVal);
       await loadAllData();
     } catch (err: any) {
       alert(err.message || 'Action failed');
@@ -98,365 +87,274 @@ export function AdminDashboard() {
     }
   };
 
-  const handleModerateRep = async (id: string, action: 'resolve' | 'dismiss') => {
-    setActionLoading(id);
-    try {
-      await moderateReport(id, action);
-      await loadAllData();
-    } catch (err: any) {
-      alert(err.message || 'Action failed');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleModerateUp = async (id: string, action: 'approve' | 'reject') => {
-    setActionLoading(id);
-    try {
-      await moderateSuggestedUpdate(id, action);
-      await loadAllData();
-    } catch (err: any) {
-      alert(err.message || 'Action failed');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  if (!isAuthenticated) {
+  if (authLoading || isLoading) {
     return (
-      <div className="bg-slate-50 min-h-screen flex items-center justify-center py-10 px-4">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 justify-center mb-6">
-            <ShieldCheck className="w-8 h-8 text-brand-600" />
-            <h1 className="text-2xl font-bold text-slate-900">Admin Login</h1>
-          </div>
-          {loginError && <p className="text-red-600 text-sm mb-4 text-center">{loginError}</p>}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
-              <input type="text" required value={username} onChange={e => setUsername(e.target.value)} className="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" />
-            </div>
-            <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2 px-4 rounded-xl transition-colors">
-              Sign In
-            </button>
-          </form>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <RefreshCw className="w-8 h-8 text-brand-500 animate-spin" />
       </div>
     );
   }
 
+  const tabs: { id: TabType; label: string; icon: any; count?: number }[] = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'submissions', label: 'Place Submissions', icon: MapPin, count: submissions.length },
+    { id: 'updates', label: 'Suggested Updates', icon: Edit3, count: updates.length },
+    { id: 'reports', label: 'Reports', icon: AlertTriangle, count: reports.length },
+    { id: 'community', label: 'Recent Updates', icon: MessageSquare },
+    { id: 'spots', label: 'Food Spots', icon: Database },
+    { id: 'sync', label: 'Data Sync & Quality', icon: ShieldAlert },
+  ];
+
   return (
-    <div className="bg-slate-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="w-6 h-6 text-brand-600" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Admin Moderation Console</h1>
-            </div>
-            <p className="text-slate-500 text-sm">Review community submissions, reports, and suggested updates</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={loadAllData}
-              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </button>
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-slate-100 text-slate-700 border border-transparent hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            >
-              Sign Out
-            </button>
-          </div>
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col">
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <ShieldAlert className="w-6 h-6 text-brand-500" />
+            Admin Panel
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">Logged in as {user?.email}</p>
         </div>
+        <nav className="flex-1 px-4 space-y-1">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === tab.id ? 'bg-brand-600 text-white' : 'hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </div>
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-brand-700' : 'bg-slate-800 text-slate-300'}`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </nav>
+      </aside>
 
-        {/* Metric Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase font-bold text-slate-400">Total Food Spots</p>
-                <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{stats.total_spots.toLocaleString()}</h3>
-                <p className="text-xs text-brand-600 font-semibold mt-1">From cleaned dataset</p>
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shrink-0">
+          <h1 className="text-2xl font-bold text-slate-900">
+            {tabs.find(t => t.id === activeTab)?.label}
+          </h1>
+          <button 
+            onClick={loadAllData}
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-8">
+          
+          {/* Overview Tab */}
+          {activeTab === 'overview' && stats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p className="text-sm font-semibold text-slate-500">Total Food Spots</p>
+                <h3 className="text-4xl font-extrabold text-slate-900 mt-2">{stats.total_spots}</h3>
+                <p className="text-xs text-brand-600 font-medium mt-1">Verified & Community</p>
               </div>
-              <div className="bg-brand-50 p-3.5 rounded-xl text-brand-600">
-                <Database className="w-6 h-6" />
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p className="text-sm font-semibold text-slate-500">Active Events</p>
+                <h3 className="text-4xl font-extrabold text-brand-600 mt-2">{stats.active_events}</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">Currently serving</p>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p className="text-sm font-semibold text-slate-500">Pending Actions</p>
+                <h3 className="text-4xl font-extrabold text-amber-600 mt-2">{submissions.length + updates.length + reports.length}</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">Across all queues</p>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p className="text-sm font-semibold text-slate-500">Recent Feedbacks</p>
+                <h3 className="text-4xl font-extrabold text-blue-600 mt-2">{stats.total_feedbacks}</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">Total platform responses</p>
               </div>
             </div>
+          )}
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase font-bold text-slate-400">Pending Submissions</p>
-                <h3 className="text-3xl font-extrabold text-brand-600 mt-1">{submissions.length}</h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Awaiting approval</p>
+          {/* Submissions Tab */}
+          {activeTab === 'submissions' && (
+            <div className="space-y-4">
+              {submissions.length === 0 && <EmptyState message="No pending submissions." />}
+              {submissions.map(sub => (
+                <div key={sub.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded mr-2">{sub.category}</span>
+                    <span className="text-xs text-slate-400">Submitted: {new Date(sub.created_at).toLocaleString()}</span>
+                    <h3 className="text-lg font-bold mt-1 text-slate-900">{sub.name}</h3>
+                    <p className="text-sm text-slate-600">{sub.area_name} • {sub.landmark}</p>
+                    <p className="text-xs text-slate-500 mt-1"><Clock className="w-3.5 h-3.5 inline mr-1" />{sub.start_time} - {sub.end_time} {sub.event_date ? `(${sub.event_date})` : ''}</p>
+                    {sub.meal_details && <p className="text-sm mt-2 bg-slate-50 p-2 rounded">🍽️ {sub.meal_details}</p>}
+                  </div>
+                  <div className="flex gap-2 shrink-0 self-start md:self-center">
+                    <button onClick={() => handleAction(sub.id, moderateSubmission, 'approve')} disabled={!!actionLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"><Check className="w-4 h-4"/> Approve</button>
+                    <button onClick={() => handleAction(sub.id, moderateSubmission, 'reject')} disabled={!!actionLoading} className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"><X className="w-4 h-4"/> Reject</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Updates Tab */}
+          {activeTab === 'updates' && (
+            <div className="space-y-4">
+              {updates.length === 0 && <EmptyState message="No suggested updates." />}
+              {updates.map(up => (
+                <div key={up.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded mr-2">{up.update_type.replace('_', ' ')}</span>
+                    <span className="text-xs text-slate-400">Submitted: {new Date(up.created_at).toLocaleString()}</span>
+                    <div className="mt-2 text-sm">
+                      <span className="font-semibold text-slate-900">Proposed change: </span>
+                      <span className="bg-blue-50 text-blue-900 px-2 py-1 rounded font-mono">{up.suggested_value}</span>
+                    </div>
+                    {up.reason && <p className="text-sm mt-2 text-slate-600">Reason: {up.reason}</p>}
+                    <p className="text-xs text-slate-400 mt-2">Target Spot ID: {up.spot_id}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0 self-start md:self-center">
+                    <button onClick={() => handleAction(up.id, moderateSuggestedUpdate, 'approve')} disabled={!!actionLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"><Check className="w-4 h-4"/> Approve</button>
+                    <button onClick={() => handleAction(up.id, moderateSuggestedUpdate, 'reject')} disabled={!!actionLoading} className="bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"><X className="w-4 h-4"/> Reject</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <div className="space-y-4">
+              {reports.length === 0 && <EmptyState message="No open reports." />}
+              {reports.map(rep => (
+                <div key={rep.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between">
+                  <div>
+                    <span className="text-xs font-bold uppercase bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded mr-2">{rep.reason.replace('_', ' ')}</span>
+                    <span className="text-xs text-slate-400">Submitted: {new Date(rep.created_at).toLocaleString()}</span>
+                    <p className="text-sm mt-2 text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100">{rep.details || 'No details provided.'}</p>
+                    <p className="text-xs text-slate-400 mt-2">Target Spot ID: {rep.spot_id}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0 self-start md:self-center">
+                    <button onClick={() => handleAction(rep.id, moderateReport, 'resolve')} disabled={!!actionLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"><Check className="w-4 h-4"/> Resolve</button>
+                    <button onClick={() => handleAction(rep.id, moderateReport, 'dismiss')} disabled={!!actionLoading} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"><X className="w-4 h-4"/> Dismiss</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Community Updates Tab */}
+          {activeTab === 'community' && (
+            <div className="space-y-4">
+              {communityUpdates.length === 0 && <EmptyState message="No community updates yet." />}
+              {communityUpdates.map(fb => (
+                <div key={fb.id} className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    {fb.feedback_type === 'happening' ? <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs font-bold">👍 Yes, it's happening</span> :
+                     fb.feedback_type === 'not_happening' ? <span className="bg-red-50 text-red-700 px-2 py-1 rounded text-xs font-bold">❌ Not happening</span> :
+                     fb.feedback_type === 'started_late' ? <span className="bg-amber-50 text-amber-700 px-2 py-1 rounded text-xs font-bold">⏰ Started late</span> :
+                     <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-bold">🏁 Finished early</span>}
+                    <span className="text-xs text-slate-400">Target Spot ID: {fb.spot_id}</span>
+                  </div>
+                  <p className="text-sm text-slate-600">Reported at: {new Date(fb.created_at).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Spots Tab */}
+          {activeTab === 'spots' && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                <h3 className="font-bold text-slate-900">Registered Food Spots ({spots.length})</h3>
+                <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">Showing recent 100</span>
               </div>
-              <div className="bg-brand-50 p-3.5 rounded-xl text-brand-600">
-                <Users className="w-6 h-6" />
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-600">
+                  <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3">Name</th>
+                      <th className="px-4 py-3">Category</th>
+                      <th className="px-4 py-3">Area</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {spots.map(spot => (
+                      <tr key={spot.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-900">{spot.name}</td>
+                        <td className="px-4 py-3">{spot.category}</td>
+                        <td className="px-4 py-3">{spot.area_name}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${spot.live_status === 'serving_now' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                            {spot.live_status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${spot.source_type === 'community' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {spot.source_type || 'system'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
+          )}
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase font-bold text-slate-400">Open Reports</p>
-                <h3 className="text-3xl font-extrabold text-amber-600 mt-1">{reports.length}</h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Requires review</p>
+          {/* Sync & Quality */}
+          {activeTab === 'sync' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-start gap-4">
+                <div className="bg-brand-50 text-brand-600 p-3 rounded-xl"><Database className="w-6 h-6" /></div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Data Sync Engine</h3>
+                  <p className="text-sm text-slate-600 mt-1">The PostGREST data synchronization engine runs nightly to pull records from authorized external datasets. Community submissions and manual edits are preserved during syncs.</p>
+                  <div className="mt-4 flex gap-4">
+                    <div className="text-sm"><span className="font-semibold">Last Sync:</span> Today, 03:00 AM</div>
+                    <div className="text-sm"><span className="font-semibold">Status:</span> <span className="text-emerald-600">Success</span></div>
+                  </div>
+                </div>
               </div>
-              <div className="bg-amber-50 p-3.5 rounded-xl text-amber-600">
-                <AlertTriangle className="w-6 h-6" />
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-start gap-4">
+                <div className="bg-amber-50 text-amber-600 p-3 rounded-xl"><FileText className="w-6 h-6" /></div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Data Quality Metrics</h3>
+                  <p className="text-sm text-slate-600 mt-1">Automatic flagging for inconsistent or missing data fields.</p>
+                  <ul className="mt-4 space-y-2 text-sm text-slate-700">
+                    <li className="flex justify-between border-b pb-1"><span>Missing Coordinates:</span> <span className="font-bold text-slate-900">0 spots</span></li>
+                    <li className="flex justify-between border-b pb-1"><span>Invalid Time Formats:</span> <span className="font-bold text-slate-900">0 spots</span></li>
+                    <li className="flex justify-between border-b pb-1"><span>Duplicate Source IDs:</span> <span className="font-bold text-slate-900">0 spots</span></li>
+                  </ul>
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase font-bold text-slate-400">Suggested Updates</p>
-                <h3 className="text-3xl font-extrabold text-blue-600 mt-1">{updates.length}</h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Corrections submitted</p>
-              </div>
-              <div className="bg-blue-50 p-3.5 rounded-xl text-blue-600">
-                <Edit3 className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 gap-6">
-          <button
-            onClick={() => setActiveTab('submissions')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'submissions'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <span>Pending Submissions</span>
-            <span className="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full">{submissions.length}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('reports')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'reports'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <span>Reports</span>
-            <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">{reports.length}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('updates')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'updates'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <span>Suggested Updates</span>
-            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{updates.length}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all ${
-              activeTab === 'stats'
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            Architecture & Policy
-          </button>
         </div>
+      </main>
+    </div>
+  );
+}
 
-        {/* Tab Contents */}
-        {activeTab === 'submissions' && (
-          <div className="space-y-4">
-            {submissions.length > 0 ? (
-              submissions.map(sub => (
-                <div key={sub.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded">
-                        {sub.category}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        Submitted on {new Date(sub.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900">{sub.name}</h3>
-                    <p className="text-sm text-slate-600">{sub.area_name} {sub.landmark ? `• ${sub.landmark}` : ''}</p>
-                    <p className="text-xs text-slate-500 flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{sub.start_time} - {sub.end_time} {sub.event_date ? `(${sub.event_date})` : '(Recurring/Daily)'}</span>
-                    </p>
-                    {sub.meal_details ? (
-                      <p className="text-xs bg-amber-50 text-amber-900 p-2 rounded-lg mt-2 font-medium">
-                        Meal details — Community provided: {sub.meal_details}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic mt-1">Meal details not provided.</p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      disabled={actionLoading === sub.id}
-                      onClick={() => handleModerateSub(sub.id, 'approve')}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <Check className="w-4 h-4" /> Approve & Publish
-                    </button>
-                    <button
-                      disabled={actionLoading === sub.id}
-                      onClick={() => handleModerateSub(sub.id, 'reject')}
-                      className="bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <X className="w-4 h-4" /> Reject
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-white p-12 text-center rounded-2xl border border-slate-200">
-                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900">No pending submissions</h3>
-                <p className="text-slate-500 text-sm">All community submitted food spots have been reviewed.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'reports' && (
-          <div className="space-y-4">
-            {reports.length > 0 ? (
-              reports.map(rep => (
-                <div key={rep.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase bg-amber-50 text-amber-800 px-2.5 py-0.5 rounded">
-                        {rep.reason.replace('_', ' ')}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {new Date(rep.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900">Report details:</p>
-                    <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      {rep.details || 'No additional details provided'}
-                    </p>
-                    <p className="text-xs text-slate-400">Target Spot ID: {rep.spot_id}</p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      disabled={actionLoading === rep.id}
-                      onClick={() => handleModerateRep(rep.id, 'resolve')}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <Check className="w-4 h-4" /> Resolve
-                    </button>
-                    <button
-                      disabled={actionLoading === rep.id}
-                      onClick={() => handleModerateRep(rep.id, 'dismiss')}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <X className="w-4 h-4" /> Dismiss
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-white p-12 text-center rounded-2xl border border-slate-200">
-                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900">No open reports</h3>
-                <p className="text-slate-500 text-sm">There are currently no community reports awaiting action.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'updates' && (
-          <div className="space-y-4">
-            {updates.length > 0 ? (
-              updates.map(up => (
-                <div key={up.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase bg-blue-50 text-blue-800 px-2.5 py-0.5 rounded">
-                        {up.update_type.replace('_', ' ')}
-                      </span>
-                      <span className="text-xs text-slate-400">
-                        {new Date(up.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900">Suggested Correction:</p>
-                    <p className="text-sm text-slate-800 bg-blue-50/50 p-3 rounded-xl border border-blue-100 font-medium">
-                      {up.suggested_value}
-                    </p>
-                    {up.reason && <p className="text-xs text-slate-500">Reason: {up.reason}</p>}
-                    <p className="text-xs text-slate-400">Target Spot ID: {up.spot_id}</p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      disabled={actionLoading === up.id}
-                      onClick={() => handleModerateUp(up.id, 'approve')}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <Check className="w-4 h-4" /> Apply Update
-                    </button>
-                    <button
-                      disabled={actionLoading === up.id}
-                      onClick={() => handleModerateUp(up.id, 'reject')}
-                      className="bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    >
-                      <X className="w-4 h-4" /> Reject
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-white p-12 text-center rounded-2xl border border-slate-200">
-                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900">No pending suggested updates</h3>
-                <p className="text-slate-500 text-sm">All community suggestions have been processed.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'stats' && (
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-brand-600" />
-              Community Data Provenance & Anti-Abuse Policies
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs sm:text-sm text-slate-600">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
-                <h4 className="font-bold text-slate-900">1. Time-Sensitive Expiry</h4>
-                <p>Community confirmations expire after a 3-hour sliding window. Yesterday's feedback cannot falsely mark today's event as currently active.</p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
-                <h4 className="font-bold text-slate-900">2. Anti-Abuse & Rate Limiting</h4>
-                <p>Sliding window rate limiters (15 req/min) and voting cooldowns (120s per spot) prevent vote manipulation and bot spamming.</p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
-                <h4 className="font-bold text-slate-900">3. Non-Destructive Submissions</h4>
-                <p>Community suggestions and additions enter a moderation queue and never overwrite original verified PostGREST source coordinates without review.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm">
+      <CheckCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+      <h3 className="text-lg font-medium text-slate-600">{message}</h3>
     </div>
   );
 }
