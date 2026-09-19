@@ -2,7 +2,7 @@
 
 ## 1. Database connection failure
 
-**Error:** database `freefoodhyd` does not exist.
+**Error:** database `freefood` does not exist.
 
 **Fix:** create the database and enable PostGIS, or verify the Docker database environment variables.
 
