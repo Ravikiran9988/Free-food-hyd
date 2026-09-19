@@ -4,14 +4,14 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-freefoodhyd}
+      POSTGRES_DB: ${POSTGRES_DB:-freefood}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-freefoodhyd}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-freefood}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,7 +23,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freefoodhyd}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freefood}
       - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY:-default_secret_key}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-}
@@ -44,7 +44,7 @@ services:
       dockerfile: infra/docker/Dockerfile.backend
     command: python data-pipeline/src/scheduler.py
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freefoodhyd}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-freefood}
       - SOURCE_SUPABASE_URL=${SOURCE_SUPABASE_URL:-${SUPABASE_URL:-}}
       - SOURCE_SUPABASE_KEY=${SOURCE_SUPABASE_KEY:-${SUPABASE_KEY:-}}
       - SYNC_SCHEDULE_HOUR=${SYNC_SCHEDULE_HOUR:-2}
