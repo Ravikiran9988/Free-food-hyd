@@ -1,78 +1,88 @@
 # Local Setup & Installation
 
-This guide explains how to set up the Free Food Hyderabad platform for local development without Docker. If you prefer Docker, use the `docker-compose up -d --build` command at the repository root.
+This guide explains how to set up Free Food Hyderabad for local development without Docker. For Docker, use the repository-root `docker-compose.yml`.
 
 ## Prerequisites
-- Node.js (v20+)
-- Python (v3.10+)
-- PostgreSQL (v15+) with PostGIS extension installed
 
-## 1. Configure Environment
-Clone the repository and set up environment variables:
+- Node.js 20+
+- Python 3.10+
+- PostgreSQL 15+ with PostGIS
+
+## 1. Configure environment
+
+Copy the example file and set local values:
+
 ```bash
 cp .env.example .env
 ```
-Edit `.env` to include your PostgreSQL credentials and a secure `ADMIN_SECRET_KEY`.
 
-## 2. Database Setup
-Ensure PostgreSQL is running and create the database (default: `freefoodhyd`):
+Set a strong `ADMIN_SECRET_KEY`. For admin bootstrap, set:
+
+```env
+ADMIN_USERNAME=admin@example.com
+ADMIN_PASSWORD=use-a-strong-password
+```
+
+These bootstrap credentials are used by the seed command and are not committed to Git.
+
+## 2. Database
+
+Create the database and enable PostGIS:
+
 ```sql
 CREATE DATABASE freefoodhyd;
 \c freefoodhyd
 CREATE EXTENSION postgis;
 ```
 
-## 3. Data Pipeline & Sync
-The data pipeline is responsible for the initial schema creation and data loading.
+## 3. Data pipeline
+
 ```bash
 cd data-pipeline
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
-
-# Run the sync process to create tables and load data
 export PYTHONPATH="$(pwd)/../apps/backend/app"
 python src/sync.py
 ```
 
-## 4. Backend Setup
-Start the FastAPI server:
+On Windows PowerShell, set the equivalent `PYTHONPATH` before running the command.
+
+## 4. Backend
+
 ```bash
 cd apps/backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-
-# Start the server with local imports resolving properly
 export PYTHONPATH="$(pwd)/app"
 uvicorn app.main:app --reload --port 8000
 ```
 
-## 5. Frontend Setup
-Start the React application:
+## 5. Frontend
+
 ```bash
 cd apps/frontend
 npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173` (Vite default).
+Vite normally serves the frontend at `http://localhost:5173`.
 
-## 6. Admin Account Setup
-To access the Admin Dashboard at `/admin`, you need an admin account. You can configure this via Environment Variables or by seeding the database directly.
+## 6. Create the admin account
 
-**Option A: Environment Variables (Quickest)**
-Edit your `.env` file to set the default credentials:
-```env
-ADMIN_USERNAME=admin@example.com
-# Must be a bcrypt hash of your password
-ADMIN_PASSWORD_HASH=$2b$12$YourSecureBcryptHash
-```
+Admin authentication uses the same `/auth/login` flow as normal users. The only difference is the database role.
 
-**Option B: Database Seeding (Production Recommended)**
-To create a real user record with admin privileges, run the seed script from the backend directory:
+Set `ADMIN_USERNAME` and `ADMIN_PASSWORD`, then run:
+
 ```bash
-cd apps/backend/app
-# Create a seed.py script as documented, or insert via SQL
+cd apps/backend
+export PYTHONPATH="$(pwd)/app"
+python seed.py
 ```
-(See `docs/admin.md` for full details on administration and seeding).
+
+The seed command creates the user if it does not exist, or promotes/updates the existing user to `admin`.
+
+Then sign in at `/signin`. The Admin Dashboard appears in the account menu only for an authenticated admin.
+
+Never commit a real password, password hash, or admin token.

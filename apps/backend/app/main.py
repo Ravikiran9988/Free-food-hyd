@@ -289,31 +289,18 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 @app.post("/auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    
-    # Fallback to hardcoded admin if DB user not found
-    if not user:
-        if form_data.username == auth.ADMIN_USERNAME and auth.verify_password(form_data.password, auth.ADMIN_PASSWORD_HASH):
-            access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-            access_token = auth.create_access_token(
-                data={"sub": auth.ADMIN_USERNAME, "role": "admin"}, expires_delta=access_token_expires
-            )
-            return {"access_token": access_token, "token_type": "bearer"}
+
+    if user is None or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
-    if not auth.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=401,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        
+
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
-        data={"sub": user.email, "role": user.role}, expires_delta=access_token_expires
+        data={"sub": user.email, "role": user.role},
+        expires_delta=access_token_expires,
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -382,7 +369,7 @@ def list_admin_community_updates(limit: int = 50, db: Session = Depends(get_db),
     return crud.get_admin_community_updates(db, limit=limit)
 
 @app.get("/stats")
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(db: Session = Depends(get_db), admin=Depends(auth.get_current_admin)):
     total_spots = db.query(models.Spot).count()
     total_events = db.query(models.Event).count()
     active_events = db.query(models.Event).filter(models.Event.status == "active").count()

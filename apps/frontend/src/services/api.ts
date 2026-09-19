@@ -336,7 +336,9 @@ export async function submitReport(data: {
 }
 
 export async function fetchStats(): Promise<StatsResponse> {
-  const res = await fetch(`${API_BASE_URL}/stats`);
+  const res = await fetch(`${API_BASE_URL}/stats`, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(`Failed to fetch stats: ${res.statusText}`);
   return res.json();
 }
