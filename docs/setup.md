@@ -30,8 +30,8 @@ These bootstrap credentials are used by the seed command and are not committed t
 Create the database and enable PostGIS:
 
 ```sql
-CREATE DATABASE freefoodhyd;
-\c freefoodhyd
+CREATE DATABASE freefood;
+\c freefood
 CREATE EXTENSION postgis;
 ```
 
