@@ -122,6 +122,8 @@ class AvailabilityFeedback(Base):
 
     spot = relationship("Spot", back_populates="feedbacks")
 
+Feedback = AvailabilityFeedback
+
 class SuggestedUpdate(Base):
     __tablename__ = "suggested_updates"
 

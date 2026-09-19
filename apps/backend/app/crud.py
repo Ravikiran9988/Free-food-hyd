@@ -124,31 +124,31 @@ def get_spots(
 
     total = query.distinct().count()
 
-    # If sorting by distance or starting_soon or recently_confirmed
-    spots_list = query.distinct().all()
-    summaries = [format_spot_summary(s, user_lat, user_lon) for s in spots_list]
-
     if sort_by == "nearest" or (user_lat is not None and user_lon is not None and not sort_by):
+        spots_list = query.distinct().all()
+        summaries = [format_spot_summary(s, user_lat, user_lon) for s in spots_list]
         summaries.sort(key=lambda x: x["distance_km"] if x["distance_km"] is not None else 99999)
+        start = (page - 1) * limit
+        end = start + limit
+        return summaries[start:end], total
     elif sort_by == "recently_confirmed":
-        # Put spots with recent positive confirmations first
+        spots_list = query.distinct().all()
+        summaries = [format_spot_summary(s, user_lat, user_lon) for s in spots_list]
         summaries.sort(
             key=lambda x: (
                 -x["community_confirmation"]["confirmed_count"],
                 x["community_confirmation"]["last_confirmation_minutes_ago"] or 99999
             )
         )
-    elif sort_by == "starting_soon":
-        status_priority = {"serving_now": 1, "starting_soon": 2, "upcoming": 3, "expired": 4}
-        summaries.sort(key=lambda x: status_priority.get(x["live_status"], 5))
+        start = (page - 1) * limit
+        end = start + limit
+        return summaries[start:end], total
     else:
-        # Default sort: active & serving now first, then newest
-        status_priority = {"serving_now": 1, "starting_soon": 2, "upcoming": 3, "expired": 4}
-        summaries.sort(key=lambda x: (status_priority.get(x["live_status"], 5), -x["created_at"].timestamp()))
-
-    start = (page - 1) * limit
-    end = start + limit
-    return summaries[start:end], total
+        # Fast SQL offset/limit for default or category browsing
+        start = (page - 1) * limit
+        spots_page = query.order_by(models.Spot.created_at.desc()).offset(start).limit(limit).all()
+        summaries = [format_spot_summary(s, user_lat, user_lon) for s in spots_page]
+        return summaries, total
 
 def get_map_points(
     db: Session,
@@ -417,6 +417,7 @@ def get_upcoming_events(db: Session, limit: int = 50) -> List[dict]:
     return [format_spot_summary(s) for s in spots]
 
 def get_serving_now_events(db: Session, limit: int = 50) -> List[dict]:
+    fetch_limit = max(limit * 3, 30)
     spots = (
         db.query(models.Spot)
         .join(models.Spot.events)
@@ -427,6 +428,7 @@ def get_serving_now_events(db: Session, limit: int = 50) -> List[dict]:
         )
         .filter(or_(models.Event.status == "active", models.Event.is_recurring_or_time_only == True))
         .distinct()
+        .limit(fetch_limit)
         .all()
     )
     summaries = [format_spot_summary(s) for s in spots]
@@ -434,6 +436,7 @@ def get_serving_now_events(db: Session, limit: int = 50) -> List[dict]:
     return serving[:limit]
 
 def get_starting_soon_events(db: Session, limit: int = 50) -> List[dict]:
+    fetch_limit = max(limit * 3, 30)
     spots = (
         db.query(models.Spot)
         .join(models.Spot.events)
@@ -444,6 +447,7 @@ def get_starting_soon_events(db: Session, limit: int = 50) -> List[dict]:
         )
         .filter(or_(models.Event.status == "upcoming", models.Event.status == "active"))
         .distinct()
+        .limit(fetch_limit)
         .all()
     )
     summaries = [format_spot_summary(s) for s in spots]
@@ -601,5 +605,5 @@ def moderate_suggested_update(db: Session, update_id: str, action: str) -> Optio
     db.refresh(up)
     return up
 
-def get_admin_community_updates(db: Session, limit: int = 50) -> List[models.Feedback]:
-    return db.query(models.Feedback).order_by(models.Feedback.created_at.desc()).limit(limit).all()
+def get_admin_community_updates(db: Session, limit: int = 50) -> List[models.AvailabilityFeedback]:
+    return db.query(models.AvailabilityFeedback).order_by(models.AvailabilityFeedback.created_at.desc()).limit(limit).all()

@@ -1,5 +1,13 @@
 import logging
+import sys
+from pathlib import Path
 from typing import List, Optional
+
+# Ensure app directory is on sys.path for direct imports (config, database, etc.)
+app_dir = Path(__file__).resolve().parent
+if str(app_dir) not in sys.path:
+    sys.path.insert(0, str(app_dir))
+
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
