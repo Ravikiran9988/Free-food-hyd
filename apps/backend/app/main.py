@@ -496,7 +496,8 @@ def trigger_sync(
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
     try:
-        project_root = Path(__file__).resolve().parents[3]\n        data_pipeline_dir = project_root / "data-pipeline" / "src"
+        project_root = Path(__file__).resolve().parents[3]
+        data_pipeline_dir = project_root / "data-pipeline" / "src"
         if str(data_pipeline_dir) not in sys.path:
             sys.path.insert(0, str(data_pipeline_dir))
 
@@ -506,11 +507,12 @@ def trigger_sync(
 
         # 2. Synchronize clean dataset into database
         from sync import run_sync
-        run_sync()
+        sync_result = run_sync()
 
         return {
             "status": "success",
             "message": "Fresh upstream scrape, validation, and database synchronization completed successfully.",
+            "sync": sync_result,
         }
     except Exception as e:
         logger.error(f"Sync trigger failed: {e}", exc_info=True)
