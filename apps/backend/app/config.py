@@ -8,7 +8,7 @@ load_dotenv()
 
 def _normalize_database_url(url: str) -> str:
     if not url:
-        return "postgresql://postgres:postgres@localhost:5433/freefoodhyd"
+        return "postgresql://postgres:postgres@localhost:5433/freefood"
 
     # Supabase/Render provide postgres:// URLs; SQLAlchemy requires postgresql://
     if url.startswith("postgres://"):
@@ -47,7 +47,7 @@ def _normalize_database_url(url: str) -> str:
 
 def _get_database_url() -> str:
     return _normalize_database_url(
-        os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5433/freefoodhyd")
+        os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5433/freefood")
     )
 
 
