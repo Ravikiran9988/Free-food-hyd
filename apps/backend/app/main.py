@@ -496,7 +496,7 @@ def trigger_sync(
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
     try:
-        data_pipeline_dir = Path(__file__).resolve().parent.parent.parent / "data-pipeline" / "src"
+        project_root = Path(__file__).resolve().parents[3]\n        data_pipeline_dir = project_root / "data-pipeline" / "src"
         if str(data_pipeline_dir) not in sys.path:
             sys.path.insert(0, str(data_pipeline_dir))
 
